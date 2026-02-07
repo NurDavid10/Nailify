@@ -40,6 +40,12 @@ Customers can book appointments by selecting an available date/time and choosing
 - Views and manages appointments
 - Controls reminder settings
 
+### 3.3 Default Admin Credentials
+- Email: admin@admin.com
+- Password: admin123
+- This default admin user must be created automatically when the system starts
+- The admin user must be able to log in immediately and access the Admin Panel without manual database setup
+
 ## 4. Customer Booking Flow
 
 ### 4.1 Home Page
@@ -204,7 +210,12 @@ Customers can book appointments by selecting an available date/time and choosing
 - Basic validation and error handling
 - Customers can view their booking confirmation
 
-### 10.3 Deliverables
+### 10.3 System Initialization
+- Automatically create default admin user on system startup
+- Default credentials: admin@admin.com / admin123
+- Ensure admin can access Admin Panel immediately without manual setup
+
+### 10.4 Deliverables
 - Working MVP application
 - README with local run instructions
 - Deployment steps documentation
@@ -217,3 +228,4 @@ The MVP focuses on:
 - Admin availability management
 - Automated reminder system
 - Multi-language support (Arabic as default)
+- Default admin user auto-creation

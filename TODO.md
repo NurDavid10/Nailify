@@ -33,7 +33,11 @@
   - [x] Availability management
   - [x] Appointments management
   - [x] Reminder settings
-- [x] Step 7: Validation & Testing
+- [x] Step 7: Default Admin User Setup
+  - [x] Create Edge Function to setup default admin
+  - [x] Add hook to call setup on app initialization
+  - [x] Update documentation with default credentials
+- [x] Step 8: Validation & Testing
   - [x] Run npm run lint
   - [x] Fix any issues
 
@@ -41,11 +45,12 @@
 - Arabic is default language with RTL support
 - Customer flow requires no login
 - Admin uses email/password authentication
+- **Default admin credentials: admin@admin.com / admin123**
+- Admin user is automatically created on first app launch
 - Price must be preserved at booking time (priceAtBooking)
 - Reminders sent 1 hour before appointment via Edge Function
 - Timezone: Asia/Jerusalem
-- First registered user becomes admin automatically
 
 ## Completed
-All features have been successfully implemented and tested. The application is ready for use.
+All features have been successfully implemented and tested. The application is ready for use with automatic admin setup.
 

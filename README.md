@@ -2,6 +2,17 @@
 
 A comprehensive appointment booking system for a nail salon with multi-language support (Arabic, Hebrew, English) and admin management features.
 
+## 🔑 Quick Start - Default Admin Credentials
+
+**For immediate access to the admin panel:**
+
+- **Email**: `admin@admin.com`
+- **Password**: `admin123`
+
+The default admin account is **automatically created** when you first visit the application. Simply navigate to `/login` and use these credentials to access all admin features immediately.
+
+> ⚠️ **Security Note**: These default credentials are for MVP/development purposes only. For production deployment, change the password or create a new admin account and delete the default one.
+
 ## Features
 
 ### Customer Features
@@ -94,13 +105,14 @@ This command will:
 
 ### First Time Setup
 
-1. **Create Admin Account**:
+**The application automatically creates a default admin user on first launch!**
+
+1. **Login with Default Admin**:
    - Navigate to `/login`
-   - Register with email and password
-   - The first registered user automatically becomes admin
+   - Use credentials: `admin@admin.com` / `admin123`
+   - You now have full admin access immediately
 
 2. **Configure Availability**:
-   - Login as admin
    - Go to "Availability" section
    - Add working hours for each day of the week
    - Set time slot intervals (e.g., 30 minutes)
