@@ -1,91 +1,200 @@
-# Welcome to Your Miaoda Project
+# Nails Booking Application
 
-## Project Info
+A comprehensive appointment booking system for a nail salon with multi-language support (Arabic, Hebrew, English) and admin management features.
 
-## Project Directory
+## Features
 
+### Customer Features
+- **Multi-language Support**: Arabic (default), Hebrew, and English with RTL/LTR layout support
+- **Easy Booking Flow**: 
+  1. Select date and time from available slots
+  2. Choose treatment with clear pricing
+  3. Enter customer details
+  4. Confirm booking with summary
+- **No Login Required**: Customers can book appointments without creating an account
+- **Booking Confirmation**: Success page with appointment details
+- **Email Reminders**: Automated reminders sent 1 hour before appointment
+
+### Admin Features
+- **Secure Login**: Email/password authentication for salon owner
+- **Dashboard**: Overview of upcoming appointments, active treatments, and availability
+- **Treatment Management**: 
+  - Create, edit, and delete treatments
+  - Multi-language names (Arabic, Hebrew, English)
+  - Set duration and pricing
+  - Activate/deactivate treatments
+- **Availability Management**:
+  - Define working hours by day of week
+  - Set time slot intervals
+  - Manage salon schedule
+- **Appointment Management**:
+  - View all upcoming appointments
+  - Cancel appointments
+  - See customer details and treatment information
+- **Settings**:
+  - Enable/disable email reminders
+  - Configure notification preferences
+
+## Technology Stack
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Framework**: shadcn/ui + Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **Authentication**: Supabase Auth
+- **Routing**: React Router v7
+- **Forms**: React Hook Form + Zod validation
+- **Date Handling**: date-fns
+- **Internationalization**: Custom i18n context
+
+## Database Schema
+
+### Tables
+1. **profiles**: User profiles with role management (admin/user)
+2. **treatments**: Service offerings with multi-language names, duration, and pricing
+3. **availability_rules**: Salon working hours and time slot configuration
+4. **appointments**: Customer bookings with preserved pricing
+5. **settings**: Application configuration (e.g., reminder settings)
+
+### Key Features
+- Row Level Security (RLS) policies for data protection
+- Automatic admin assignment for first registered user
+- Price preservation at booking time (priceAtBooking)
+- Conflict prevention for double bookings
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+ and pnpm
+- Supabase account (automatically configured)
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+3. The application is pre-configured with Supabase. Environment variables are already set.
+
+### Running Locally
+
+**Note**: This project uses a custom build system. Do not use `npm run dev` or `npm run build`.
+
+To validate your code:
+```bash
+npm run lint
 ```
-├── README.md # Documentation
-├── components.json # Component library configuration
-├── index.html # Entry file
-├── package.json # Package management
-├── postcss.config.js # PostCSS configuration
-├── public # Static resources directory
-│   ├── favicon.png # Icon
-│   └── images # Image resources
-├── src # Source code directory
-│   ├── App.tsx # Entry file
-│   ├── components # Components directory
-│   ├── context # Context directory
-│   ├── db # Database configuration directory
-│   ├── hooks # Common hooks directory
-│   ├── index.css # Global styles
-│   ├── layout # Layout directory
-│   ├── lib # Utility library directory
-│   ├── main.tsx # Entry file
-│   ├── routes.tsx # Routing configuration
-│   ├── pages # Pages directory
-│   ├── services # Database interaction directory
-│   ├── types # Type definitions directory
-├── tsconfig.app.json # TypeScript frontend configuration file
-├── tsconfig.json # TypeScript configuration file
-├── tsconfig.node.json # TypeScript Node.js configuration file
-└── vite.config.ts # Vite configuration file
-```
 
-## Tech Stack
+This command will:
+- Check TypeScript types
+- Run Biome linter
+- Validate Tailwind CSS
+- Test build process
 
-Vite, TypeScript, React, Supabase
+### First Time Setup
 
-## Development Guidelines
+1. **Create Admin Account**:
+   - Navigate to `/login`
+   - Register with email and password
+   - The first registered user automatically becomes admin
 
-### How to edit code locally?
+2. **Configure Availability**:
+   - Login as admin
+   - Go to "Availability" section
+   - Add working hours for each day of the week
+   - Set time slot intervals (e.g., 30 minutes)
 
-You can choose [VSCode](https://code.visualstudio.com/Download) or any IDE you prefer. The only requirement is to have Node.js and npm installed.
+3. **Add Treatments**:
+   - Go to "Treatments" section
+   - Add services with names in all three languages
+   - Set duration and pricing
+   - Activate treatments
 
-### Environment Requirements
+4. **Configure Reminders**:
+   - Go to "Settings"
+   - Enable email reminders
+   - Reminders are sent 1 hour before appointments
 
-```
-# Node.js ≥ 20
-# npm ≥ 10
-Example:
-# node -v   # v20.18.3
-# npm -v    # 10.8.2
-```
+## Usage
 
-### Installing Node.js on Windows
+### For Customers
 
-```
-# Step 1: Visit the Node.js official website: https://nodejs.org/, click download. The website will automatically suggest a suitable version (32-bit or 64-bit) for your system.
-# Step 2: Run the installer: Double-click the downloaded installer to run it.
-# Step 3: Complete the installation: Follow the installation wizard to complete the process.
-# Step 4: Verify installation: Open Command Prompt (cmd) or your IDE terminal, and type `node -v` and `npm -v` to check if Node.js and npm are installed correctly.
-```
+1. Visit the home page
+2. Click "Book Appointment"
+3. Select desired date and available time slot
+4. Choose a treatment (price displayed prominently)
+5. Enter your name and phone number
+6. Review booking summary
+7. Confirm booking
+8. Receive confirmation and reminder email
 
-### Installing Node.js on macOS
+### For Admin
 
-```
-# Step 1: Using Homebrew (Recommended method): Open Terminal. Type the command `brew install node` and press Enter. If Homebrew is not installed, you need to install it first by running the following command in Terminal:
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-Alternatively, use the official installer: Visit the Node.js official website. Download the macOS .pkg installer. Open the downloaded .pkg file and follow the prompts to complete the installation.
-# Step 2: Verify installation: Open Command Prompt (cmd) or your IDE terminal, and type `node -v` and `npm -v` to check if Node.js and npm are installed correctly.
-```
+1. Login at `/login`
+2. Access admin panel from header
+3. Manage treatments, availability, and appointments
+4. View dashboard for quick overview
+5. Configure reminder settings
 
-### After installation, follow these steps:
+## Multi-Language Support
 
-```
-# Step 1: Download the code package
-# Step 2: Extract the code package
-# Step 3: Open the code package with your IDE and navigate into the code directory
-# Step 4: In the IDE terminal, run the command to install dependencies: npm i
-# Step 5: In the IDE terminal, run the command to start the development server: npm run dev -- --host 127.0.0.1
-# Step 6: if step 5 failed, try this command to start the development server: npx vite --host 127.0.0.1
-```
+The application supports three languages with proper RTL/LTR handling:
 
-### How to develop backend services?
+- **Arabic (العربية)**: Default language, RTL layout
+- **Hebrew (עברית)**: RTL layout
+- **English**: LTR layout
 
-Configure environment variables and install relevant dependencies.If you need to use a database, please use the official version of Supabase.
+Language can be switched using the language selector in the header.
 
-## Learn More
+## Email Reminders
 
-You can also check the help documentation: Download and Building the app（ [https://intl.cloud.baidu.com/en/doc/MIAODA/s/download-and-building-the-app-en](https://intl.cloud.baidu.com/en/doc/MIAODA/s/download-and-building-the-app-en)）to learn more detailed content.
+The application includes an Edge Function (`send-reminders`) that:
+- Checks for appointments starting in approximately 1 hour
+- Sends email reminders to customers
+- Includes appointment details and pricing
+- Can be enabled/disabled from admin settings
+
+**Note**: For production use, integrate with an email service provider (SendGrid, Resend, AWS SES, etc.) in the Edge Function.
+
+## Deployment
+
+The application is designed to be deployed on platforms that support:
+- React/Vite applications
+- Supabase backend
+- Edge Functions
+
+Recommended platforms:
+- Vercel
+- Netlify
+- Cloudflare Pages
+
+## Security Features
+
+- Row Level Security (RLS) on all database tables
+- Admin-only access to management features
+- Secure authentication with Supabase Auth
+- Protected API routes
+- Input validation with Zod schemas
+
+## Price Preservation
+
+When a customer books an appointment, the current treatment price is stored in `price_at_booking`. This ensures that:
+- Historical bookings reflect the price at time of booking
+- Admin can change treatment prices without affecting existing bookings
+- Accurate financial records are maintained
+
+## Timezone
+
+All appointments are stored and displayed in **Asia/Jerusalem** timezone to ensure consistency for the salon's location.
+
+## Support
+
+For issues or questions:
+1. Check the TODO.md file for implementation notes
+2. Review the database schema in the migration files
+3. Examine the Edge Function for reminder customization
+
+## License
+
+© 2026 Nails Booking. All rights reserved.
