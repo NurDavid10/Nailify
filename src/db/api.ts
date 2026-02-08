@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Treatment, AvailabilityRule, Appointment, Settings, TimeSlot } from '@/types/index';
+import type { Treatment, AvailabilityRule, TimeSlot } from '@/types/index';
 
 // Treatments
 export async function getTreatments(activeOnly = true) {

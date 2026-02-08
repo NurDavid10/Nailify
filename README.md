@@ -94,7 +94,15 @@ The default admin account is **automatically created** when you first visit the 
 
 ### Running Locally
 
-**Note**: This project uses a custom build system. Do not use `npm run dev` or `npm run build`.
+To start the development server:
+```bash
+npm run dev
+```
+
+To build for production:
+```bash
+npm run build
+```
 
 To validate your code:
 ```bash

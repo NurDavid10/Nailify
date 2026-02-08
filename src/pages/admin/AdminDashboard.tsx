@@ -1,6 +1,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Sparkles, Clock, TrendingUp } from 'lucide-react';
+import { Calendar, Sparkles, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getUpcomingAppointments, getTreatments, getAvailabilityRules } from '@/db/api';
 

@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, User, Phone, FileText, DollarSign } from 'lucide-react';
 import { createAppointment } from '@/db/api';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import type { Treatment } from '@/types/index';
 
 export default function ConfirmPage() {

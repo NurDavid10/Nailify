@@ -10,7 +10,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { useAdminSetup } from '@/hooks/use-admin-setup';
 
 function AppContent() {
-  const { setupComplete, setupError } = useAdminSetup();
+  const { setupError } = useAdminSetup();
 
   useEffect(() => {
     if (setupError) {
