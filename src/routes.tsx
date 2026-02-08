@@ -1,17 +1,34 @@
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import DateTimePage from './pages/booking/DateTimePage';
-import TreatmentPage from './pages/booking/TreatmentPage';
-import DetailsPage from './pages/booking/DetailsPage';
-import ConfirmPage from './pages/booking/ConfirmPage';
-import SuccessPage from './pages/SuccessPage';
-import AdminLayout from './components/layouts/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import TreatmentsManagement from './pages/admin/TreatmentsManagement';
-import AvailabilityManagement from './pages/admin/AvailabilityManagement';
-import AppointmentsManagement from './pages/admin/AppointmentsManagement';
-import SettingsPage from './pages/admin/SettingsPage';
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
+
+// Loading component for lazy-loaded routes
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Lazy load page components for better code-splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DateTimePage = lazy(() => import('./pages/booking/DateTimePage'));
+const TreatmentPage = lazy(() => import('./pages/booking/TreatmentPage'));
+const DetailsPage = lazy(() => import('./pages/booking/DetailsPage'));
+const ConfirmPage = lazy(() => import('./pages/booking/ConfirmPage'));
+const SuccessPage = lazy(() => import('./pages/SuccessPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFound'));
+
+// Admin pages (separate chunk)
+const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const TreatmentsManagement = lazy(() => import('./pages/admin/TreatmentsManagement'));
+const AvailabilityManagement = lazy(() => import('./pages/admin/AvailabilityManagement'));
+const AppointmentsManagement = lazy(() => import('./pages/admin/AppointmentsManagement'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+
+// Wrapper component for lazy-loaded pages
+const LazyPage = ({ children }: { children: ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+);
 
 interface RouteConfig {
   name: string;
@@ -25,67 +42,72 @@ const routes: RouteConfig[] = [
   {
     name: 'Home',
     path: '/',
-    element: <HomePage />,
+    element: <LazyPage><HomePage /></LazyPage>,
   },
   {
     name: 'Login',
     path: '/login',
-    element: <LoginPage />,
+    element: <LazyPage><LoginPage /></LazyPage>,
   },
   {
     name: 'Booking - Date & Time',
     path: '/booking/date-time',
-    element: <DateTimePage />,
+    element: <LazyPage><DateTimePage /></LazyPage>,
   },
   {
     name: 'Booking - Treatment',
     path: '/booking/treatment',
-    element: <TreatmentPage />,
+    element: <LazyPage><TreatmentPage /></LazyPage>,
   },
   {
     name: 'Booking - Details',
     path: '/booking/details',
-    element: <DetailsPage />,
+    element: <LazyPage><DetailsPage /></LazyPage>,
   },
   {
     name: 'Booking - Confirm',
     path: '/booking/confirm',
-    element: <ConfirmPage />,
+    element: <LazyPage><ConfirmPage /></LazyPage>,
   },
   {
     name: 'Success',
     path: '/success',
-    element: <SuccessPage />,
+    element: <LazyPage><SuccessPage /></LazyPage>,
+  },
+  {
+    name: 'Not Found',
+    path: '/404',
+    element: <LazyPage><NotFoundPage /></LazyPage>,
   },
   {
     name: 'Admin',
     path: '/admin',
-    element: <AdminLayout />,
+    element: <LazyPage><AdminLayout /></LazyPage>,
     children: [
       {
         name: 'Dashboard',
         path: '/admin',
-        element: <AdminDashboard />,
+        element: <LazyPage><AdminDashboard /></LazyPage>,
       },
       {
         name: 'Treatments',
         path: '/admin/treatments',
-        element: <TreatmentsManagement />,
+        element: <LazyPage><TreatmentsManagement /></LazyPage>,
       },
       {
         name: 'Availability',
         path: '/admin/availability',
-        element: <AvailabilityManagement />,
+        element: <LazyPage><AvailabilityManagement /></LazyPage>,
       },
       {
         name: 'Appointments',
         path: '/admin/appointments',
-        element: <AppointmentsManagement />,
+        element: <LazyPage><AppointmentsManagement /></LazyPage>,
       },
       {
         name: 'Settings',
         path: '/admin/settings',
-        element: <SettingsPage />,
+        element: <LazyPage><SettingsPage /></LazyPage>,
       },
     ],
   },

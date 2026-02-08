@@ -193,7 +193,7 @@ export async function createAppointment(appointment: {
   end_datetime: string;
   price_at_booking: number;
 }) {
-  // Check for conflicts
+  // Check for conflicts before inserting
   const { data: conflicts } = await supabase
     .from('appointments')
     .select('id')
@@ -208,6 +208,7 @@ export async function createAppointment(appointment: {
     throw new Error('Time slot is no longer available');
   }
 
+  // Insert the appointment
   const { data, error } = await supabase
     .from('appointments')
     .insert([{ ...appointment, status: 'booked' }])

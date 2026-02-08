@@ -55,7 +55,7 @@ function AppContent() {
             />
           );
         })}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </div>
   );

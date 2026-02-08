@@ -18,6 +18,128 @@ interface Appointment {
   };
 }
 
+interface ReminderData {
+  customer: string;
+  phone: string;
+  email?: string;
+  date: string;
+  time: string;
+  treatment: string;
+  treatmentAr: string;
+  treatmentHe: string;
+  price: number;
+  appointmentId: string;
+}
+
+// Email sending function - integrates with Resend API
+// To enable: Set RESEND_API_KEY in Supabase Edge Function secrets
+async function sendEmailReminder(reminder: ReminderData): Promise<boolean> {
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+
+  if (!resendApiKey) {
+    console.log('[Email] RESEND_API_KEY not configured - skipping email send');
+    console.log('[Email] Would send reminder to:', reminder.customer);
+    return false;
+  }
+
+  // Note: In production, you would need to collect customer email during booking
+  // For now, we log the reminder that would be sent
+  if (!reminder.email) {
+    console.log('[Email] No email address for customer:', reminder.customer);
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Nails Booking <reminders@nailsbooking.local>',
+        to: [reminder.email],
+        subject: `Appointment Reminder - ${reminder.date} at ${reminder.time}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #ec4899;">Appointment Reminder</h2>
+            <p>Dear ${reminder.customer},</p>
+            <p>This is a friendly reminder about your upcoming appointment:</p>
+            <div style="background-color: #fdf2f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Date:</strong> ${reminder.date}</p>
+              <p><strong>Time:</strong> ${reminder.time}</p>
+              <p><strong>Treatment:</strong> ${reminder.treatment}</p>
+              <p><strong>Price:</strong> ₪${reminder.price.toFixed(2)}</p>
+            </div>
+            <p>We look forward to seeing you!</p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+              If you need to cancel or reschedule, please contact us as soon as possible.
+            </p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[Email] Failed to send:', error);
+      return false;
+    }
+
+    console.log('[Email] Successfully sent reminder to:', reminder.email);
+    return true;
+  } catch (error) {
+    console.error('[Email] Error sending reminder:', error);
+    return false;
+  }
+}
+
+// SMS sending function placeholder
+// To enable: Integrate with Twilio, MessageBird, or similar
+async function sendSmsReminder(reminder: ReminderData): Promise<boolean> {
+  const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+  const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+  const twilioPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
+
+  if (!twilioSid || !twilioToken || !twilioPhone) {
+    console.log('[SMS] Twilio not configured - skipping SMS send');
+    console.log('[SMS] Would send reminder to:', reminder.phone);
+    return false;
+  }
+
+  try {
+    const message = `Nails Booking Reminder: ${reminder.date} at ${reminder.time} - ${reminder.treatment} (₪${reminder.price.toFixed(2)})`;
+
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: reminder.phone,
+          From: twilioPhone,
+          Body: message,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[SMS] Failed to send:', error);
+      return false;
+    }
+
+    console.log('[SMS] Successfully sent reminder to:', reminder.phone);
+    return true;
+  } catch (error) {
+    console.error('[SMS] Error sending reminder:', error);
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -37,7 +159,7 @@ Deno.serve(async (req) => {
 
     if (!settings || settings.value !== 'true') {
       return new Response(
-        JSON.stringify({ message: 'Reminders are disabled' }),
+        JSON.stringify({ message: 'Reminders are disabled', count: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
@@ -76,9 +198,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send reminders (in a real implementation, integrate with email service)
-    // For MVP, we'll log the reminders that would be sent
-    const reminders = appointments.map((apt: Appointment) => {
+    // Process reminders
+    const results = {
+      total: appointments.length,
+      emailSent: 0,
+      smsSent: 0,
+      failed: 0,
+      reminders: [] as ReminderData[],
+    };
+
+    for (const apt of appointments as Appointment[]) {
       const appointmentDate = new Date(apt.start_datetime);
       const formattedDate = appointmentDate.toLocaleDateString('en-US', {
         timeZone: 'Asia/Jerusalem',
@@ -92,28 +221,40 @@ Deno.serve(async (req) => {
         minute: '2-digit',
       });
 
-      return {
+      const reminder: ReminderData = {
         customer: apt.customer_name,
         phone: apt.phone,
         date: formattedDate,
         time: formattedTime,
         treatment: apt.treatments.name_en,
+        treatmentAr: apt.treatments.name_ar,
+        treatmentHe: apt.treatments.name_he,
         price: apt.price_at_booking,
-        message: `Reminder: You have an appointment on ${formattedDate} at ${formattedTime} for ${apt.treatments.name_en}. Price: ₪${apt.price_at_booking}`,
+        appointmentId: apt.id,
       };
-    });
 
-    console.log('Reminders to send:', reminders);
+      results.reminders.push(reminder);
 
-    // In a production environment, you would integrate with an email service here
-    // Example: SendGrid, Resend, AWS SES, etc.
-    // For each reminder, send an email to the customer
+      // Try to send email reminder
+      const emailSent = await sendEmailReminder(reminder);
+      if (emailSent) results.emailSent++;
+
+      // Try to send SMS reminder
+      const smsSent = await sendSmsReminder(reminder);
+      if (smsSent) results.smsSent++;
+
+      // Track failures (neither email nor SMS sent successfully)
+      if (!emailSent && !smsSent) {
+        results.failed++;
+      }
+    }
+
+    console.log('Reminder processing complete:', results);
 
     return new Response(
       JSON.stringify({
         message: 'Reminders processed',
-        count: reminders.length,
-        reminders,
+        ...results,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

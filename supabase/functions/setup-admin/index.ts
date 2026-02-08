@@ -5,6 +5,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Generate a secure random password
+function generateSecurePassword(length = 16): string {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => charset[byte % charset.length]).join('');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -22,23 +30,26 @@ Deno.serve(async (req) => {
 
     // Check if admin user already exists
     const { data: existingUser } = await supabase.auth.admin.listUsers();
-    const adminExists = existingUser?.users?.some((user) => user.email === 'admin@admin.com');
+    const adminExists = existingUser?.users?.some((user) => user.email === 'admin@nailsbooking.local');
 
     if (adminExists) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'Admin user already exists',
-          existed: true 
+          existed: true
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // Create admin user
+    // Generate a secure password for the admin user
+    const securePassword = generateSecurePassword(16);
+
+    // Create admin user with secure password
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-      email: 'admin@admin.com',
-      password: 'admin123',
+      email: 'admin@nailsbooking.local',
+      password: securePassword,
       email_confirm: true,
       user_metadata: {
         role: 'admin',
@@ -64,11 +75,19 @@ Deno.serve(async (req) => {
       // Don't throw - user is created, profile will be synced by trigger
     }
 
+    // Log the credentials securely (only visible in Edge Function logs)
+    console.log('='.repeat(60));
+    console.log('DEFAULT ADMIN CREDENTIALS (save these securely!)');
+    console.log('Email:', 'admin@nailsbooking.local');
+    console.log('Password:', securePassword);
+    console.log('='.repeat(60));
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Default admin user created successfully',
-        email: 'admin@admin.com',
+        message: 'Default admin user created successfully. Check Edge Function logs for credentials.',
+        email: 'admin@nailsbooking.local',
+        passwordHint: 'Check Supabase Edge Function logs for the generated password',
         existed: false,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -76,9 +95,9 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        error: error.message
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
