@@ -84,14 +84,14 @@ export async function deleteAvailabilityRule(id: string) {
 export async function getAvailableTimeSlots(date: Date): Promise<TimeSlot[]> {
   const dayOfWeek = date.getDay();
 
-  // Get availability rules for this day
-  const { data: rules, error: rulesError } = await supabase
+  // Get all availability rules for this day (supports multiple shifts, e.g. morning + afternoon)
+  const { data: allRules, error: rulesError } = await supabase
     .from('availability_rules')
     .select('*')
     .eq('day_of_week', dayOfWeek)
-    .maybeSingle();
+    .order('start_time');
 
-  if (rulesError || !rules) {
+  if (rulesError || !allRules || allRules.length === 0) {
     return [];
   }
 
@@ -110,39 +110,49 @@ export async function getAvailableTimeSlots(date: Date): Promise<TimeSlot[]> {
 
   if (appointmentsError) throw appointmentsError;
 
-  // Generate time slots
+  // Generate time slots from all rules
   const slots: TimeSlot[] = [];
-  const [startHour, startMinute] = rules.start_time.split(':').map(Number);
-  const [endHour, endMinute] = rules.end_time.split(':').map(Number);
+  const now = new Date();
 
-  let currentTime = new Date(date);
-  currentTime.setHours(startHour, startMinute, 0, 0);
+  for (const rules of allRules) {
+    const [startHour, startMinute] = rules.start_time.split(':').map(Number);
+    const [endHour, endMinute] = rules.end_time.split(':').map(Number);
 
-  const endTime = new Date(date);
-  endTime.setHours(endHour, endMinute, 0, 0);
+    let currentTime = new Date(date);
+    currentTime.setHours(startHour, startMinute, 0, 0);
 
-  while (currentTime < endTime) {
-    const slotStart = new Date(currentTime);
-    const slotEnd = new Date(currentTime.getTime() + rules.slot_interval_minutes * 60 * 1000);
+    const endTime = new Date(date);
+    endTime.setHours(endHour, endMinute, 0, 0);
 
-    // Check if slot is available (not overlapping with existing appointments)
-    const isAvailable = !appointments?.some((apt) => {
-      const aptStart = new Date(apt.start_datetime);
-      const aptEnd = new Date(apt.end_datetime);
-      return (
-        (slotStart >= aptStart && slotStart < aptEnd) ||
-        (slotEnd > aptStart && slotEnd <= aptEnd) ||
-        (slotStart <= aptStart && slotEnd >= aptEnd)
-      );
-    });
+    while (currentTime < endTime) {
+      const slotStart = new Date(currentTime);
+      const slotEnd = new Date(currentTime.getTime() + rules.slot_interval_minutes * 60 * 1000);
 
-    slots.push({
-      start: slotStart,
-      end: slotEnd,
-      available: isAvailable,
-    });
+      // Skip slots that have already passed (for today)
+      if (slotStart <= now) {
+        currentTime = slotEnd;
+        continue;
+      }
 
-    currentTime = slotEnd;
+      // Check if slot is available (not overlapping with existing appointments)
+      const isAvailable = !appointments?.some((apt) => {
+        const aptStart = new Date(apt.start_datetime);
+        const aptEnd = new Date(apt.end_datetime);
+        return (
+          (slotStart >= aptStart && slotStart < aptEnd) ||
+          (slotEnd > aptStart && slotEnd <= aptEnd) ||
+          (slotStart <= aptStart && slotEnd >= aptEnd)
+        );
+      });
+
+      slots.push({
+        start: slotStart,
+        end: slotEnd,
+        available: isAvailable,
+      });
+
+      currentTime = slotEnd;
+    }
   }
 
   return slots;
@@ -193,29 +203,42 @@ export async function createAppointment(appointment: {
   end_datetime: string;
   price_at_booking: number;
 }) {
-  // Check for conflicts before inserting
-  const { data: conflicts } = await supabase
-    .from('appointments')
-    .select('id')
-    .eq('status', 'booked')
-    .or(
-      `and(start_datetime.lte.${appointment.start_datetime},end_datetime.gt.${appointment.start_datetime}),` +
-      `and(start_datetime.lt.${appointment.end_datetime},end_datetime.gte.${appointment.end_datetime}),` +
-      `and(start_datetime.gte.${appointment.start_datetime},end_datetime.lte.${appointment.end_datetime})`
-    );
+  // Try the atomic RPC first (race-safe, requires migration 00002 to be applied).
+  // Falls back to direct insert if the function doesn't exist in the database.
+  const { data: rpcData, error: rpcError } = await supabase.rpc('create_appointment_atomic', {
+    p_customer_name: appointment.customer_name,
+    p_phone: appointment.phone,
+    p_notes: appointment.notes,
+    p_treatment_id: appointment.treatment_id,
+    p_start_datetime: appointment.start_datetime,
+    p_end_datetime: appointment.end_datetime,
+    p_price_at_booking: appointment.price_at_booking,
+  });
 
-  if (conflicts && conflicts.length > 0) {
-    throw new Error('Time slot is no longer available');
+  if (!rpcError) {
+    return { id: rpcData };
   }
 
-  // Insert the appointment
+  // If the RPC function doesn't exist, fall back to direct insert
+  const isMissingFunction = rpcError.message?.includes('could not find') ||
+    rpcError.message?.includes('schema cache') ||
+    rpcError.code === '42883'; // PostgreSQL "undefined_function"
+
+  if (!isMissingFunction) {
+    // A real error from the RPC (e.g. conflict). Wrap as Error for proper display.
+    throw new Error(rpcError.message || 'Failed to create booking');
+  }
+
+  // Fallback: direct insert (works without the migration applied)
   const { data, error } = await supabase
     .from('appointments')
     .insert([{ ...appointment, status: 'booked' }])
     .select()
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message || 'Failed to create booking');
+  }
   return data;
 }
 

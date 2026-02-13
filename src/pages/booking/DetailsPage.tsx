@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,24 @@ export default function DetailsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Validate that previous booking steps (date/time + treatment) were completed
+    try {
+      const raw = localStorage.getItem('bookingData');
+      if (!raw) {
+        navigate('/booking/date-time');
+        return;
+      }
+      const data = JSON.parse(raw);
+      if (!data.selectedDate || !data.selectedTime || !data.selectedTreatment) {
+        navigate('/booking/date-time');
+        return;
+      }
+    } catch {
+      navigate('/booking/date-time');
+    }
+  }, [navigate]);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,19 +58,24 @@ export default function DetailsPage() {
   });
 
   const onSubmit = (data: FormData) => {
-    const existingData = JSON.parse(localStorage.getItem('bookingData') || '{}');
-    const bookingData = {
-      ...existingData,
-      customerName: data.customerName,
-      phone: data.phone,
-      notes: data.notes || '',
-    };
-    localStorage.setItem('bookingData', JSON.stringify(bookingData));
+    try {
+      const existingData = JSON.parse(localStorage.getItem('bookingData') || '{}');
+      const bookingData = {
+        ...existingData,
+        customerName: data.customerName,
+        phone: data.phone,
+        notes: data.notes || '',
+      };
+      localStorage.setItem('bookingData', JSON.stringify(bookingData));
+    } catch {
+      navigate('/booking/date-time');
+      return;
+    }
     navigate('/booking/confirm');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 py-8">
+    <div className="min-h-screen bg-muted/30 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate('/booking/treatment')} className="gap-2">
@@ -60,7 +84,7 @@ export default function DetailsPage() {
           </Button>
         </div>
 
-        <Card>
+        <Card className="shadow-sm border-border/50">
           <CardHeader>
             <CardTitle className="text-2xl">{t('booking.step3')}</CardTitle>
           </CardHeader>

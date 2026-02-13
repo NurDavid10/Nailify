@@ -30,12 +30,16 @@ export default function ConfirmPage() {
       navigate('/booking/date-time');
       return;
     }
-    const parsed = JSON.parse(data);
-    if (!parsed.selectedDate || !parsed.selectedTime || !parsed.selectedTreatment || !parsed.customerName) {
+    try {
+      const parsed = JSON.parse(data);
+      if (!parsed.selectedDate || !parsed.selectedTime || !parsed.selectedTreatment || !parsed.customerName) {
+        navigate('/booking/date-time');
+        return;
+      }
+      setBookingData(parsed);
+    } catch {
       navigate('/booking/date-time');
-      return;
     }
-    setBookingData(parsed);
   }, [navigate]);
 
   const getTreatmentName = (treatment: Treatment) => {
@@ -92,7 +96,7 @@ export default function ConfirmPage() {
   const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 py-8">
+    <div className="min-h-screen bg-muted/30 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate('/booking/details')} className="gap-2">
@@ -101,7 +105,7 @@ export default function ConfirmPage() {
           </Button>
         </div>
 
-        <Card>
+        <Card className="shadow-sm border-border/50">
           <CardHeader>
             <CardTitle className="text-2xl">{t('booking.step4')}</CardTitle>
           </CardHeader>

@@ -23,6 +23,8 @@ export default function AdminDashboard() {
         activeTreatments: treatments.length,
         availabilityRules: rules.length,
       });
+    }).catch((error) => {
+      console.error('Failed to load dashboard stats:', error);
     });
   }, []);
 

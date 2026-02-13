@@ -8,8 +8,9 @@ interface RouteGuardProps {
 
 // Please add the pages that can be accessed without logging in to PUBLIC_ROUTES.
 const PUBLIC_ROUTES = ['/login', '/403', '/404', '/', '/booking/*', '/success'];
+const ADMIN_ROUTES = ['/admin', '/admin/*'];
 
-function matchPublicRoute(path: string, patterns: string[]) {
+function matchRoute(path: string, patterns: string[]) {
   return patterns.some(pattern => {
     if (pattern.includes('*')) {
       const regex = new RegExp('^' + pattern.replace('*', '.*') + '$');
@@ -20,19 +21,26 @@ function matchPublicRoute(path: string, patterns: string[]) {
 }
 
 export function RouteGuard({ children }: RouteGuardProps) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     if (loading) return;
 
-    const isPublic = matchPublicRoute(location.pathname, PUBLIC_ROUTES);
+    const isPublic = matchRoute(location.pathname, PUBLIC_ROUTES);
+    const isAdmin = matchRoute(location.pathname, ADMIN_ROUTES);
 
     if (!user && !isPublic) {
       navigate('/login', { state: { from: location.pathname }, replace: true });
+      return;
     }
-  }, [user, loading, location.pathname, navigate]);
+
+    // Redirect non-admin users away from admin routes
+    if (isAdmin && (!user || profile?.role !== 'admin')) {
+      navigate('/login', { state: { from: location.pathname }, replace: true });
+    }
+  }, [user, profile, loading, location.pathname, navigate]);
 
   if (loading) {
     return (

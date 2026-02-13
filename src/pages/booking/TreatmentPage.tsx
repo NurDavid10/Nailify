@@ -16,20 +16,42 @@ export default function TreatmentPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Validate that the previous booking step (date/time) was completed
+    try {
+      const raw = localStorage.getItem('bookingData');
+      if (!raw) {
+        navigate('/booking/date-time');
+        return;
+      }
+      const data = JSON.parse(raw);
+      if (!data.selectedDate || !data.selectedTime) {
+        navigate('/booking/date-time');
+        return;
+      }
+    } catch {
+      navigate('/booking/date-time');
+      return;
+    }
+
     getTreatments(true)
       .then(setTreatments)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [navigate]);
 
   const handleNext = () => {
     if (selectedTreatment) {
-      const existingData = JSON.parse(localStorage.getItem('bookingData') || '{}');
-      const bookingData = {
-        ...existingData,
-        selectedTreatment,
-      };
-      localStorage.setItem('bookingData', JSON.stringify(bookingData));
+      try {
+        const existingData = JSON.parse(localStorage.getItem('bookingData') || '{}');
+        const bookingData = {
+          ...existingData,
+          selectedTreatment,
+        };
+        localStorage.setItem('bookingData', JSON.stringify(bookingData));
+      } catch {
+        navigate('/booking/date-time');
+        return;
+      }
       navigate('/booking/details');
     }
   };
@@ -46,7 +68,7 @@ export default function TreatmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 py-8">
+    <div className="min-h-screen bg-muted/30 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate('/booking/date-time')} className="gap-2">
@@ -55,7 +77,7 @@ export default function TreatmentPage() {
           </Button>
         </div>
 
-        <Card>
+        <Card className="shadow-sm border-border/50">
           <CardHeader>
             <CardTitle className="text-2xl">{t('booking.step2')}</CardTitle>
           </CardHeader>
@@ -106,7 +128,7 @@ export default function TreatmentPage() {
                 </div>
 
                 {selectedTreatment && (
-                  <Card className="bg-accent/50 border-primary/30">
+                  <Card className="bg-primary/5 border-primary/30">
                     <CardContent className="p-4">
                       <h3 className="font-semibold mb-3">{t('booking.selectedTreatment')}</h3>
                       <div className="space-y-2">

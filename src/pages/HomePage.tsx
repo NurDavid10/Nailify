@@ -8,14 +8,22 @@ export default function HomePage() {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
+        <img
+          src="/salon/IMG_8395.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-white/65 backdrop-blur-[1px]" />
+
+        <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 text-center space-y-8 max-w-3xl">
           <div className="space-y-4">
             <div className="flex justify-center">
-              <Sparkles className="h-16 w-16 text-primary" />
+              <Sparkles className="h-12 w-12 text-primary" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground tracking-tight">
               {t('home.title')}
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground">
@@ -27,20 +35,86 @@ export default function HomePage() {
             {t('home.description')}
           </p>
 
-          <div className="pt-6">
-            <Button asChild size="lg" className="text-lg px-8 py-6">
+          <div className="pt-4">
+            <Button asChild size="lg" className="text-lg px-10 py-7 rounded-full shadow-lg hover:shadow-xl transition-shadow">
               <Link to="/booking/date-time">
                 <Calendar className="h-5 w-5 me-2" />
                 {t('common.book')}
               </Link>
             </Button>
           </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12">
-            <Card className="border-primary/20">
+      {/* Gallery */}
+      <section className="py-12 bg-secondary/30">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">
+            {t('home.title')}
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
+              <img
+                src="/salon/IMG_8393.jpg"
+                alt="Nail art design"
+                loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
+              <img
+                src="/salon/IMG_8394.jpg"
+                alt="Floral nail art"
+                loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
+              <img
+                src="/salon/IMG_8397.jpg"
+                alt="Blue floral nail art"
+                loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
+              <img
+                src="/salon/IMG_8398.jpg"
+                alt="Sage green nail art"
+                loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
+              <img
+                src="/salon/IMG_8402.jpg"
+                alt="Leopard print nail art"
+                loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
+              <img
+                src="/salon/IMG_8403.jpg"
+                alt="Baby blue nail art"
+                loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 bg-background">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="pt-6 text-center space-y-3">
                 <div className="flex justify-center">
-                  <Clock className="h-10 w-10 text-primary" />
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Clock className="h-7 w-7 text-primary" />
+                  </div>
                 </div>
                 <h3 className="font-semibold text-lg">{t('booking.step1')}</h3>
                 <p className="text-sm text-muted-foreground">
@@ -49,10 +123,12 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-primary/20">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="pt-6 text-center space-y-3">
                 <div className="flex justify-center">
-                  <Sparkles className="h-10 w-10 text-primary" />
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="h-7 w-7 text-primary" />
+                  </div>
                 </div>
                 <h3 className="font-semibold text-lg">{t('booking.step2')}</h3>
                 <p className="text-sm text-muted-foreground">
@@ -61,10 +137,12 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-primary/20">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="pt-6 text-center space-y-3">
                 <div className="flex justify-center">
-                  <Award className="h-10 w-10 text-primary" />
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Award className="h-7 w-7 text-primary" />
+                  </div>
                 </div>
                 <h3 className="font-semibold text-lg">{t('booking.step4')}</h3>
                 <p className="text-sm text-muted-foreground">
@@ -74,7 +152,7 @@ export default function HomePage() {
             </Card>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

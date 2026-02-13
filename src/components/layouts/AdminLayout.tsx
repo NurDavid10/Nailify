@@ -67,17 +67,17 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       <div className="flex h-screen">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-64 border-r border-border bg-card">
+        <aside className="hidden lg:block w-64 border-r border-border/50 bg-background">
           <Sidebar />
         </aside>
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="border-b border-border bg-card">
+          <header className="border-b border-border/50 bg-background">
             <div className="flex items-center justify-between px-4 py-4">
               <div className="flex items-center gap-4">
                 {/* Mobile Menu */}
@@ -105,7 +105,7 @@ export default function AdminLayout() {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-6 bg-muted/30">
             <Outlet />
           </main>
         </div>
