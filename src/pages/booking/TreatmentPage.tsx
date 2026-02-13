@@ -68,8 +68,16 @@ export default function TreatmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="relative min-h-screen py-8">
+      {/* Subtle background image */}
+      <img
+        src="/salon/IMG_8393.jpg"
+        alt=""
+        className="fixed inset-0 w-full h-full object-cover opacity-[0.25] pointer-events-none"
+      />
+      <div className="fixed inset-0 bg-background/40 pointer-events-none" />
+
+      <div className="relative z-10 container mx-auto px-4 max-w-4xl">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate('/booking/date-time')} className="gap-2">
             <ArrowLeft className="h-4 w-4" />

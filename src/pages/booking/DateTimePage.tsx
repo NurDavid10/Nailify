@@ -47,9 +47,9 @@ export default function DateTimePage() {
       <img
         src="/salon/IMG_8398.jpg"
         alt=""
-        className="fixed inset-0 w-full h-full object-cover opacity-[0.06] pointer-events-none"
+        className="fixed inset-0 w-full h-full object-cover opacity-[0.25] pointer-events-none"
       />
-      <div className="fixed inset-0 bg-background/80 pointer-events-none" />
+      <div className="fixed inset-0 bg-background/40 pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 max-w-4xl">
         <div className="mb-6">
