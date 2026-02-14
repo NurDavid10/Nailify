@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { getTreatments, getAvailableTimeSlots, createAppointment } from '@/db/api';
+import { getTreatments, getAvailableTimeSlots, getAvailableDates, createAppointment } from '@/db/api';
 import type { Treatment, TimeSlot } from '@/types/index';
 
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ export default function CreateAppointment() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -67,6 +68,9 @@ export default function CreateAppointment() {
 
   useEffect(() => {
     getTreatments(true).then(setTreatments).catch(console.error);
+    getAvailableDates()
+      .then((dates) => setAvailableDates(new Set(dates)))
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -215,7 +219,11 @@ export default function CreateAppointment() {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => date < tomorrow}
+                        disabled={(date) => {
+                          if (date < tomorrow) return true;
+                          const dateStr = format(date, 'yyyy-MM-dd');
+                          return !availableDates.has(dateStr);
+                        }}
                         className="rounded-md border"
                       />
                     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/db/supabase';
+import { api } from '@/db/client';
 
 export function useAdminSetup() {
   const [setupComplete, setSetupComplete] = useState(false);
@@ -15,22 +15,21 @@ export function useAdminSetup() {
           return;
         }
 
-        // Call the setup-admin Edge Function
-        const { data, error } = await supabase.functions.invoke('setup-admin', {
-          method: 'POST',
-        });
+        // Call the admin setup endpoint
+        const data = await api.post('/admin/setup', {});
 
-        if (error) {
-          console.error('Admin setup error:', error);
-          setSetupError(error.message);
-        } else {
-          console.log('Admin setup result:', data);
-          sessionStorage.setItem('admin_setup_run', 'true');
-          setSetupComplete(true);
-        }
+        console.log('Admin setup result:', data);
+        sessionStorage.setItem('admin_setup_run', 'true');
+        setSetupComplete(true);
       } catch (error) {
         console.error('Failed to setup admin:', error);
-        setSetupError(error instanceof Error ? error.message : 'Unknown error');
+        // If it's already setup, that's fine - mark as complete
+        if (error instanceof Error && error.message.includes('already been completed')) {
+          sessionStorage.setItem('admin_setup_run', 'true');
+          setSetupComplete(true);
+        } else {
+          setSetupError(error instanceof Error ? error.message : 'Unknown error');
+        }
       }
     };
 

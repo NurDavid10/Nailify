@@ -1,27 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { supabase } from '@/db/supabase';
-import type { User } from '@supabase/supabase-js';
+import { api } from '@/db/client';
 import type { Profile } from '@/types/index';
 
-export async function getProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Failed to get user profile:', error);
-    return null;
-  }
-  return data;
+interface LoginResponse {
+  token: string;
+  profile: Profile;
 }
 
 interface AuthContextType {
-  user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null; profile?: Profile }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -29,88 +18,65 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  // Flag to prevent onAuthStateChange from overwriting the profile
-  // that signIn already loaded eagerly.
-  let skipNextAuthChange = false;
 
   const refreshProfile = async () => {
-    if (!user) {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
       setProfile(null);
       return;
     }
 
-    const profileData = await getProfile(user.id);
-    setProfile(profileData);
+    try {
+      const response = await api.get<{ profile: Profile }>('/auth/me');
+      setProfile(response.profile);
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+      // Token is invalid or expired, clear it
+      localStorage.removeItem('auth_token');
+      setProfile(null);
+    }
   };
 
+  // Check for existing session on mount
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        getProfile(session.user.id).then(setProfile);
-      }
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      // Validate token by fetching profile
+      refreshProfile().finally(() => setLoading(false));
+    } else {
       setLoading(false);
-    });
-    // In this function, do NOT use any await calls. Use `.then()` instead to avoid deadlocks.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (skipNextAuthChange) {
-        skipNextAuthChange = false;
-        return;
-      }
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        getProfile(session.user.id).then(setProfile);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Tell the onAuthStateChange listener to skip the next event,
-      // because we load the profile eagerly below and don't want the
-      // listener to overwrite it with an async fetch that briefly
-      // leaves profile as null (causing RouteGuard to bounce).
-      skipNextAuthChange = true;
-
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const response = await api.post<LoginResponse>('/auth/login', {
         email,
         password,
       });
 
-      if (error) {
-        skipNextAuthChange = false;
-        throw error;
-      }
+      // Store token in localStorage
+      localStorage.setItem('auth_token', response.token);
 
-      // Eagerly load the profile before returning so that RouteGuard
-      // sees the admin role immediately when the caller navigates.
-      if (data.user) {
-        const profileData = await getProfile(data.user.id);
-        setUser(data.user);
-        setProfile(profileData);
-      }
+      // Set profile immediately
+      setProfile(response.profile);
 
-      return { error: null };
+      return { error: null, profile: response.profile };
     } catch (error) {
       return { error: error as Error };
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    // Remove token from localStorage
+    localStorage.removeItem('auth_token');
     setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ profile, loading, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

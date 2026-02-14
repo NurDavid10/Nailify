@@ -58,22 +58,49 @@ export default function ConfirmPage() {
 
     setLoading(true);
     try {
-      const selectedDate = new Date(bookingData.selectedDate);
+      console.log('Booking data:', bookingData);
+
+      // Parse the ISO date string to get just the date part (YYYY-MM-DD)
+      const dateStr = bookingData.selectedDate.split('T')[0]; // "2026-02-20"
+      console.log('Date string:', dateStr);
+      console.log('Selected time:', bookingData.selectedTime);
+
       const [hours, minutes] = bookingData.selectedTime.split(':').map(Number);
-      selectedDate.setHours(hours, minutes, 0, 0);
+      console.log('Parsed hours:', hours, 'minutes:', minutes);
+
+      // Create the date in local timezone
+      const [year, month, day] = dateStr.split('-').map(Number);
+      console.log('Parsed date parts - year:', year, 'month:', month, 'day:', day);
+
+      const selectedDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+      console.log('Created start date:', selectedDate);
+
+      // Handle both snake_case (duration_minutes) and camelCase (durationMinutes) for backward compatibility
+      const durationMinutes = bookingData.selectedTreatment.duration_minutes ||
+                              (bookingData.selectedTreatment as any).durationMinutes;
+      console.log('Duration minutes:', durationMinutes);
+
+      if (!durationMinutes || isNaN(durationMinutes)) {
+        throw new Error('Invalid treatment duration');
+      }
 
       const endDateTime = new Date(selectedDate);
-      endDateTime.setMinutes(endDateTime.getMinutes() + bookingData.selectedTreatment.duration_minutes);
+      endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
+      console.log('Created end date:', endDateTime);
 
-      await createAppointment({
+      const appointmentData = {
         customer_name: bookingData.customerName,
         phone: bookingData.phone,
         notes: bookingData.notes || null,
         treatment_id: bookingData.selectedTreatment.id,
         start_datetime: selectedDate.toISOString(),
         end_datetime: endDateTime.toISOString(),
-        price_at_booking: bookingData.selectedTreatment.price,
-      });
+        price_at_booking: Number(bookingData.selectedTreatment.price),
+      };
+
+      console.log('Appointment data to send:', appointmentData);
+
+      await createAppointment(appointmentData);
 
       localStorage.removeItem('bookingData');
       navigate('/success');
@@ -92,7 +119,10 @@ export default function ConfirmPage() {
     return null;
   }
 
-  const selectedDate = new Date(bookingData.selectedDate);
+  // Parse the date safely for display
+  const dateStr = bookingData.selectedDate.split('T')[0]; // "2026-02-20"
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const selectedDate = new Date(year, month - 1, day);
   const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
 
   return (

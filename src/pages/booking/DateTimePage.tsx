@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { getAvailableTimeSlots } from '@/db/api';
+import { getAvailableTimeSlots, getAvailableDates } from '@/db/api';
 import type { TimeSlot } from '@/types/index';
 import { format } from 'date-fns';
 
@@ -16,6 +16,13 @@ export default function DateTimePage() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getAvailableDates()
+      .then((dates) => setAvailableDates(new Set(dates)))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (selectedDate) {
@@ -71,7 +78,11 @@ export default function DateTimePage() {
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  disabled={(date) => {
+                    if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    return !availableDates.has(dateStr);
+                  }}
                   className="rounded-md border"
                 />
               </div>

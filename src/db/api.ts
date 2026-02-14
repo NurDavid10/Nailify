@@ -1,197 +1,109 @@
-import { supabase } from './supabase';
-import type { Treatment, AvailabilityRule, TimeSlot } from '@/types/index';
+import { api } from './client';
+import type { Treatment, AvailabilityRule, TimeSlot, Appointment, Setting } from '@/types/index';
 
 // Treatments
-export async function getTreatments(activeOnly = true) {
-  let query = supabase.from('treatments').select('*').order('name_en');
+export async function getTreatments(activeOnly = true): Promise<Treatment[]> {
+  return api.get<Treatment[]>(`/treatments?activeOnly=${activeOnly}`);
+}
 
-  if (activeOnly) {
-    query = query.eq('is_active', true);
+export async function getTreatmentById(id: string): Promise<Treatment | null> {
+  try {
+    return await api.get<Treatment>(`/treatments/${id}`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('404')) {
+      return null;
+    }
+    throw error;
   }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
 }
 
-export async function getTreatmentById(id: string) {
-  const { data, error } = await supabase
-    .from('treatments')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+export async function createTreatment(
+  treatment: Omit<Treatment, 'id' | 'created_at' | 'updated_at'>
+): Promise<Treatment> {
+  // Transform snake_case to camelCase for API
+  const payload = {
+    nameAr: treatment.name_ar,
+    nameHe: treatment.name_he,
+    nameEn: treatment.name_en,
+    durationMinutes: treatment.duration_minutes,
+    price: treatment.price,
+    isActive: treatment.is_active,
+  };
+  return api.post<Treatment>('/treatments', payload);
 }
 
-export async function createTreatment(treatment: Omit<Treatment, 'id' | 'created_at' | 'updated_at'>) {
-  const { data, error } = await supabase
-    .from('treatments')
-    .insert([treatment])
-    .select()
-    .maybeSingle();
+export async function updateTreatment(
+  id: string,
+  updates: Partial<Treatment>
+): Promise<Treatment> {
+  // Transform snake_case to camelCase for API
+  const payload: Record<string, any> = {};
+  if (updates.name_ar !== undefined) payload.nameAr = updates.name_ar;
+  if (updates.name_he !== undefined) payload.nameHe = updates.name_he;
+  if (updates.name_en !== undefined) payload.nameEn = updates.name_en;
+  if (updates.duration_minutes !== undefined) payload.durationMinutes = updates.duration_minutes;
+  if (updates.price !== undefined) payload.price = updates.price;
+  if (updates.is_active !== undefined) payload.isActive = updates.is_active;
 
-  if (error) throw error;
-  return data;
+  return api.put<Treatment>(`/treatments/${id}`, payload);
 }
 
-export async function updateTreatment(id: string, updates: Partial<Treatment>) {
-  const { data, error } = await supabase
-    .from('treatments')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function deleteTreatment(id: string) {
-  const { error } = await supabase.from('treatments').delete().eq('id', id);
-  if (error) throw error;
+export async function deleteTreatment(id: string): Promise<void> {
+  await api.delete<void>(`/treatments/${id}`);
 }
 
 // Availability Rules
-export async function getAvailabilityRules() {
-  const { data, error } = await supabase
-    .from('availability_rules')
-    .select('*')
-    .order('day_of_week');
-
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+export async function getAvailabilityRules(): Promise<AvailabilityRule[]> {
+  return api.get<AvailabilityRule[]>('/availability/rules');
 }
 
-export async function createAvailabilityRule(rule: Omit<AvailabilityRule, 'id' | 'created_at'>) {
-  const { data, error } = await supabase
-    .from('availability_rules')
-    .insert([rule])
-    .select()
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+export async function createAvailabilityRule(
+  rule: Omit<AvailabilityRule, 'id' | 'created_at'>
+): Promise<AvailabilityRule> {
+  return api.post<AvailabilityRule>('/availability/rules', {
+    specificDate: rule.specific_date,
+    startTime: rule.start_time,
+    endTime: rule.end_time,
+    slotIntervalMinutes: rule.slot_interval_minutes,
+  });
 }
 
-export async function deleteAvailabilityRule(id: string) {
-  const { error } = await supabase.from('availability_rules').delete().eq('id', id);
-  if (error) throw error;
+export async function deleteAvailabilityRule(id: string): Promise<void> {
+  await api.delete<void>(`/availability/rules/${id}`);
 }
 
-// Generate time slots based on availability rules
+// Get available time slots for a specific date
 export async function getAvailableTimeSlots(date: Date): Promise<TimeSlot[]> {
-  const dayOfWeek = date.getDay();
+  // Format as YYYY-MM-DD
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-  // Get all availability rules for this day (supports multiple shifts, e.g. morning + afternoon)
-  const { data: allRules, error: rulesError } = await supabase
-    .from('availability_rules')
-    .select('*')
-    .eq('day_of_week', dayOfWeek)
-    .order('start_time');
+  const slots = await api.get<{ start: string; end: string; available: boolean }[]>(
+    `/availability/slots?date=${dateStr}`
+  );
 
-  if (rulesError || !allRules || allRules.length === 0) {
-    return [];
-  }
+  // Convert ISO strings back to Date objects
+  return slots.map((slot) => ({
+    start: new Date(slot.start),
+    end: new Date(slot.end),
+    available: slot.available,
+  }));
+}
 
-  // Get existing appointments for this day
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const { data: appointments, error: appointmentsError } = await supabase
-    .from('appointments')
-    .select('start_datetime, end_datetime')
-    .eq('status', 'booked')
-    .gte('start_datetime', startOfDay.toISOString())
-    .lte('start_datetime', endOfDay.toISOString());
-
-  if (appointmentsError) throw appointmentsError;
-
-  // Generate time slots from all rules
-  const slots: TimeSlot[] = [];
-  const now = new Date();
-
-  for (const rules of allRules) {
-    const [startHour, startMinute] = rules.start_time.split(':').map(Number);
-    const [endHour, endMinute] = rules.end_time.split(':').map(Number);
-
-    let currentTime = new Date(date);
-    currentTime.setHours(startHour, startMinute, 0, 0);
-
-    const endTime = new Date(date);
-    endTime.setHours(endHour, endMinute, 0, 0);
-
-    while (currentTime < endTime) {
-      const slotStart = new Date(currentTime);
-      const slotEnd = new Date(currentTime.getTime() + rules.slot_interval_minutes * 60 * 1000);
-
-      // Skip slots that have already passed (for today)
-      if (slotStart <= now) {
-        currentTime = slotEnd;
-        continue;
-      }
-
-      // Check if slot is available (not overlapping with existing appointments)
-      const isAvailable = !appointments?.some((apt) => {
-        const aptStart = new Date(apt.start_datetime);
-        const aptEnd = new Date(apt.end_datetime);
-        return (
-          (slotStart >= aptStart && slotStart < aptEnd) ||
-          (slotEnd > aptStart && slotEnd <= aptEnd) ||
-          (slotStart <= aptStart && slotEnd >= aptEnd)
-        );
-      });
-
-      slots.push({
-        start: slotStart,
-        end: slotEnd,
-        available: isAvailable,
-      });
-
-      currentTime = slotEnd;
-    }
-  }
-
-  return slots;
+// Get distinct dates that have availability rules (for calendar filtering)
+export async function getAvailableDates(): Promise<string[]> {
+  return api.get<string[]>('/availability/dates');
 }
 
 // Appointments
-export async function getAppointments(status?: 'booked' | 'canceled') {
-  let query = supabase
-    .from('appointments')
-    .select(`
-      *,
-      treatments:treatment_id (*)
-    `)
-    .order('start_datetime', { ascending: true });
-
-  if (status) {
-    query = query.eq('status', status);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+export async function getAppointments(
+  status?: 'booked' | 'canceled'
+): Promise<Appointment[]> {
+  const queryParam = status ? `?status=${status}` : '';
+  return api.get<Appointment[]>(`/appointments${queryParam}`);
 }
 
-export async function getUpcomingAppointments() {
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('appointments')
-    .select(`
-      *,
-      treatments:treatment_id (*)
-    `)
-    .eq('status', 'booked')
-    .gte('start_datetime', now)
-    .order('start_datetime', { ascending: true })
-    .limit(50);
-
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+export async function getUpcomingAppointments(): Promise<Appointment[]> {
+  return api.get<Appointment[]>('/appointments/upcoming');
 }
 
 export async function createAppointment(appointment: {
@@ -203,101 +115,41 @@ export async function createAppointment(appointment: {
   end_datetime: string;
   price_at_booking: number;
   created_by?: 'admin' | 'customer';
-}) {
-  // Try the atomic RPC with created_by param first (migration 00003).
-  // If that signature doesn't exist, try without created_by (migration 00002).
-  // Falls back to direct insert if no RPC exists at all.
-  const rpcParams: Record<string, unknown> = {
-    p_customer_name: appointment.customer_name,
-    p_phone: appointment.phone,
-    p_notes: appointment.notes,
-    p_treatment_id: appointment.treatment_id,
-    p_start_datetime: appointment.start_datetime,
-    p_end_datetime: appointment.end_datetime,
-    p_price_at_booking: appointment.price_at_booking,
-    p_created_by: appointment.created_by || 'customer',
-  };
+}): Promise<{ id: string }> {
+  const response = await api.post<Appointment>('/appointments', {
+    customerName: appointment.customer_name,
+    phone: appointment.phone,
+    notes: appointment.notes,
+    treatmentId: appointment.treatment_id,
+    startDatetime: appointment.start_datetime,
+    endDatetime: appointment.end_datetime,
+    priceAtBooking: appointment.price_at_booking,
+    createdBy: appointment.created_by || 'customer',
+  });
 
-  const isFunctionMissing = (err: { message?: string; code?: string }) =>
-    err.message?.includes('could not find') ||
-    err.message?.includes('schema cache') ||
-    err.code === '42883';
-
-  // Attempt 1: RPC with created_by (requires migration 00003)
-  const { data: rpcData, error: rpcError } = await supabase.rpc('create_appointment_atomic', rpcParams);
-
-  if (!rpcError) {
-    return { id: rpcData };
-  }
-
-  if (!isFunctionMissing(rpcError)) {
-    throw new Error(rpcError.message || 'Failed to create booking');
-  }
-
-  // Attempt 2: RPC without created_by (requires migration 00002 only)
-  const { p_created_by: _, ...rpcParamsLegacy } = rpcParams;
-  const { data: rpcData2, error: rpcError2 } = await supabase.rpc('create_appointment_atomic', rpcParamsLegacy);
-
-  if (!rpcError2) {
-    return { id: rpcData2 };
-  }
-
-  if (!isFunctionMissing(rpcError2)) {
-    throw new Error(rpcError2.message || 'Failed to create booking');
-  }
-
-  // Attempt 3: direct insert without created_by (no migrations applied)
-  const { created_by: _cb, ...insertData } = appointment;
-  const { data, error } = await supabase
-    .from('appointments')
-    .insert([{ ...insertData, status: 'booked' }])
-    .select()
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(error.message || 'Failed to create booking');
-  }
-  return data;
+  return { id: response.id };
 }
 
-export async function cancelAppointment(id: string) {
-  const { data, error } = await supabase
-    .from('appointments')
-    .update({ status: 'canceled' })
-    .eq('id', id)
-    .select()
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+export async function cancelAppointment(id: string): Promise<Appointment> {
+  return api.patch<Appointment>(`/appointments/${id}/cancel`);
 }
 
 // Settings
-export async function getSettings() {
-  const { data, error } = await supabase.from('settings').select('*');
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+export async function getSettings(): Promise<Setting[]> {
+  return api.get<Setting[]>('/settings');
 }
 
-export async function getSetting(key: string) {
-  const { data, error } = await supabase
-    .from('settings')
-    .select('*')
-    .eq('key', key)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+export async function getSetting(key: string): Promise<Setting | null> {
+  try {
+    return await api.get<Setting>(`/settings/${key}`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('404')) {
+      return null;
+    }
+    throw error;
+  }
 }
 
-export async function updateSetting(key: string, value: string) {
-  const { data, error } = await supabase
-    .from('settings')
-    .update({ value, updated_at: new Date().toISOString() })
-    .eq('key', key)
-    .select()
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+export async function updateSetting(key: string, value: string): Promise<Setting> {
+  return api.put<Setting>(`/settings/${key}`, { value });
 }

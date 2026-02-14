@@ -2,6 +2,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -9,13 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -32,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { format } from 'date-fns';
 import {
   Form,
   FormControl,
@@ -42,23 +37,13 @@ import {
 } from '@/components/ui/form';
 
 const formSchema = z.object({
-  day_of_week: z.number().min(0).max(6),
+  specific_date: z.date({ required_error: 'Please select a date' }),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   slot_interval_minutes: z.number().min(15).max(120),
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-const daysOfWeek = [
-  { value: 0, key: 'day.sunday' },
-  { value: 1, key: 'day.monday' },
-  { value: 2, key: 'day.tuesday' },
-  { value: 3, key: 'day.wednesday' },
-  { value: 4, key: 'day.thursday' },
-  { value: 5, key: 'day.friday' },
-  { value: 6, key: 'day.saturday' },
-];
 
 export default function AvailabilityManagement() {
   const { t } = useLanguage();
@@ -70,7 +55,6 @@ export default function AvailabilityManagement() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      day_of_week: 0,
       start_time: '09:00',
       end_time: '18:00',
       slot_interval_minutes: 30,
@@ -95,15 +79,28 @@ export default function AvailabilityManagement() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await createAvailabilityRule(data);
+      const dateStr = format(data.specific_date, 'yyyy-MM-dd');
+      await createAvailabilityRule({
+        specific_date: dateStr,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        slot_interval_minutes: data.slot_interval_minutes,
+      });
       toast({ title: t('common.success'), description: 'Availability rule created' });
       setDialogOpen(false);
       form.reset();
       loadRules();
-    } catch (error) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message: string }).message)
+            : 'Failed to create rule';
+      console.error('Create rule error:', error);
       toast({
         title: t('common.error'),
-        description: error instanceof Error ? error.message : 'Failed to create rule',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -125,10 +122,8 @@ export default function AvailabilityManagement() {
     }
   };
 
-  const getDayName = (dayOfWeek: number) => {
-    const day = daysOfWeek.find((d) => d.value === dayOfWeek);
-    return day ? t(day.key) : dayOfWeek.toString();
-  };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="space-y-6">
@@ -149,27 +144,24 @@ export default function AvailabilityManagement() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="day_of_week"
+                  name="specific_date"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('admin.dayOfWeek')}</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(Number(value))}
-                        defaultValue={field.value.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {daysOfWeek.map((day) => (
-                            <SelectItem key={day.value} value={day.value.toString()}>
-                              {t(day.key)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="flex flex-col">
+                      <FormLabel>{t('booking.date')}</FormLabel>
+                      <div className="flex justify-center">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < today}
+                          className="rounded-md border"
+                        />
+                      </div>
+                      {field.value && (
+                        <p className="text-sm text-muted-foreground text-center">
+                          {format(field.value, 'PPP')}
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -249,7 +241,7 @@ export default function AvailabilityManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('admin.dayOfWeek')}</TableHead>
+                    <TableHead>{t('booking.date')}</TableHead>
                     <TableHead>{t('admin.startTime')}</TableHead>
                     <TableHead>{t('admin.endTime')}</TableHead>
                     <TableHead>{t('admin.slotInterval')}</TableHead>
@@ -259,7 +251,7 @@ export default function AvailabilityManagement() {
                 <TableBody>
                   {rules.map((rule) => (
                     <TableRow key={rule.id}>
-                      <TableCell className="font-medium">{getDayName(rule.day_of_week)}</TableCell>
+                      <TableCell className="font-medium">{rule.specific_date}</TableCell>
                       <TableCell>{rule.start_time}</TableCell>
                       <TableCell>{rule.end_time}</TableCell>
                       <TableCell>{rule.slot_interval_minutes} min</TableCell>

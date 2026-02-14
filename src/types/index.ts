@@ -28,7 +28,7 @@ export interface Treatment {
 
 export interface AvailabilityRule {
   id: string;
-  day_of_week: number;
+  specific_date: string;
   start_time: string;
   end_time: string;
   slot_interval_minutes: number;

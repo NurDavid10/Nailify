@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth, getProfile } from '@/contexts/AuthContext';
-import { supabase } from '@/db/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +25,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { error, profile: loggedInProfile } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -40,15 +39,17 @@ export default function LoginPage() {
         title: t('common.success'),
         description: t('auth.loginButton'),
       });
-      // Only redirect to admin routes if the user is actually an admin.
-      // Otherwise always go to home to prevent a redirect loop with RouteGuard.
-      const isAdminTarget = from === '/admin' || from.startsWith('/admin/');
-      const { data: { session } } = await supabase.auth.getSession();
-      const isAdmin = session?.user
-        ? (await getProfile(session.user.id))?.role === 'admin'
-        : false;
 
-      navigate(isAdminTarget && isAdmin ? from : '/', { replace: true });
+      // Use the profile returned from signIn for immediate redirect
+      const isAdmin = loggedInProfile?.role === 'admin';
+
+      // Admin users always go to the dashboard; regular users go to home.
+      if (isAdmin) {
+        const isAdminTarget = from === '/admin' || from.startsWith('/admin/');
+        navigate(isAdminTarget ? from : '/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     }
   };
 

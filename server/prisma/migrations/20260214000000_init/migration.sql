@@ -1,0 +1,2 @@
+-- This is a baseline migration - the schema was already applied to the database
+-- AlreadyExecuted
