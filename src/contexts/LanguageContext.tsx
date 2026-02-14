@@ -93,7 +93,12 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.reminders': 'التذكيرات',
     'admin.enableReminders': 'تفعيل التذكيرات',
     'admin.reminderDescription': 'إرسال تذكير بالبريد الإلكتروني قبل الموعد بساعة',
-    
+    'admin.createAppointment': 'إنشاء موعد',
+    'admin.appointmentDetails': 'تفاصيل الموعد',
+    'admin.appointmentCreated': 'تم إنشاء الموعد بنجاح',
+    'admin.selectTreatment': 'اختر العلاج',
+    'admin.selectDateFirst': 'اختر التاريخ أولاً',
+
     // Days of week
     'day.sunday': 'الأحد',
     'day.monday': 'الاثنين',
@@ -191,7 +196,12 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.reminders': 'תזכורות',
     'admin.enableReminders': 'הפעל תזכורות',
     'admin.reminderDescription': 'שלח תזכורת במייל שעה לפני התור',
-    
+    'admin.createAppointment': 'צור תור',
+    'admin.appointmentDetails': 'פרטי התור',
+    'admin.appointmentCreated': 'התור נוצר בהצלחה',
+    'admin.selectTreatment': 'בחר טיפול',
+    'admin.selectDateFirst': 'בחר תאריך קודם',
+
     // Days of week
     'day.sunday': 'ראשון',
     'day.monday': 'שני',
@@ -289,7 +299,12 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.reminders': 'Reminders',
     'admin.enableReminders': 'Enable Reminders',
     'admin.reminderDescription': 'Send email reminder one hour before appointment',
-    
+    'admin.createAppointment': 'Create Appointment',
+    'admin.appointmentDetails': 'Appointment Details',
+    'admin.appointmentCreated': 'Appointment created successfully',
+    'admin.selectTreatment': 'Select a treatment',
+    'admin.selectDateFirst': 'Select a date first',
+
     // Days of week
     'day.sunday': 'Sunday',
     'day.monday': 'Monday',

@@ -66,12 +66,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+
+      // Eagerly load the profile before returning so that RouteGuard
+      // sees the admin role immediately when the caller navigates.
+      if (data.user) {
+        const profileData = await getProfile(data.user.id);
+        setUser(data.user);
+        setProfile(profileData);
+      }
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };

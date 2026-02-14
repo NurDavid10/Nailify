@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getProfile } from '@/contexts/AuthContext';
+import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const { t } = useLanguage();
-  const { signIn } = useAuth();
+  const { signIn, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -19,7 +20,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as { from?: string })?.from || '/admin';
+  const from = (location.state as { from?: string })?.from || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +40,15 @@ export default function LoginPage() {
         title: t('common.success'),
         description: t('auth.loginButton'),
       });
-      navigate(from, { replace: true });
+      // Only redirect to admin routes if the user is actually an admin.
+      // Otherwise always go to home to prevent a redirect loop with RouteGuard.
+      const isAdminTarget = from === '/admin' || from.startsWith('/admin/');
+      const { data: { session } } = await supabase.auth.getSession();
+      const isAdmin = session?.user
+        ? (await getProfile(session.user.id))?.role === 'admin'
+        : false;
+
+      navigate(isAdminTarget && isAdmin ? from : '/', { replace: true });
     }
   };
 

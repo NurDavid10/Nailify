@@ -24,6 +24,7 @@ const TreatmentsManagement = lazy(() => import('./pages/admin/TreatmentsManageme
 const AvailabilityManagement = lazy(() => import('./pages/admin/AvailabilityManagement'));
 const AppointmentsManagement = lazy(() => import('./pages/admin/AppointmentsManagement'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+const CreateAppointment = lazy(() => import('./pages/admin/CreateAppointment'));
 
 // Wrapper component for lazy-loaded pages
 const LazyPage = ({ children }: { children: ReactNode }) => (
@@ -103,6 +104,11 @@ const routes: RouteConfig[] = [
         name: 'Appointments',
         path: '/admin/appointments',
         element: <LazyPage><AppointmentsManagement /></LazyPage>,
+      },
+      {
+        name: 'Create Appointment',
+        path: '/admin/create-appointment',
+        element: <LazyPage><CreateAppointment /></LazyPage>,
       },
       {
         name: 'Settings',

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Sparkles,
   Calendar,
+  CalendarPlus,
   Clock,
   Settings,
   Menu,
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'admin.treatments', href: '/admin/treatments', icon: Sparkles },
   { name: 'admin.availability', href: '/admin/availability', icon: Clock },
   { name: 'admin.appointments', href: '/admin/appointments', icon: Calendar },
+  { name: 'admin.createAppointment', href: '/admin/create-appointment', icon: CalendarPlus },
   { name: 'admin.settings', href: '/admin/settings', icon: Settings },
 ];
 

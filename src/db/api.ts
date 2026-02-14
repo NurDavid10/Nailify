@@ -202,10 +202,12 @@ export async function createAppointment(appointment: {
   start_datetime: string;
   end_datetime: string;
   price_at_booking: number;
+  created_by?: 'admin' | 'customer';
 }) {
-  // Try the atomic RPC first (race-safe, requires migration 00002 to be applied).
-  // Falls back to direct insert if the function doesn't exist in the database.
-  const { data: rpcData, error: rpcError } = await supabase.rpc('create_appointment_atomic', {
+  // Try the atomic RPC with created_by param first (migration 00003).
+  // If that signature doesn't exist, try without created_by (migration 00002).
+  // Falls back to direct insert if no RPC exists at all.
+  const rpcParams: Record<string, unknown> = {
     p_customer_name: appointment.customer_name,
     p_phone: appointment.phone,
     p_notes: appointment.notes,
@@ -213,26 +215,42 @@ export async function createAppointment(appointment: {
     p_start_datetime: appointment.start_datetime,
     p_end_datetime: appointment.end_datetime,
     p_price_at_booking: appointment.price_at_booking,
-  });
+    p_created_by: appointment.created_by || 'customer',
+  };
+
+  const isFunctionMissing = (err: { message?: string; code?: string }) =>
+    err.message?.includes('could not find') ||
+    err.message?.includes('schema cache') ||
+    err.code === '42883';
+
+  // Attempt 1: RPC with created_by (requires migration 00003)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('create_appointment_atomic', rpcParams);
 
   if (!rpcError) {
     return { id: rpcData };
   }
 
-  // If the RPC function doesn't exist, fall back to direct insert
-  const isMissingFunction = rpcError.message?.includes('could not find') ||
-    rpcError.message?.includes('schema cache') ||
-    rpcError.code === '42883'; // PostgreSQL "undefined_function"
-
-  if (!isMissingFunction) {
-    // A real error from the RPC (e.g. conflict). Wrap as Error for proper display.
+  if (!isFunctionMissing(rpcError)) {
     throw new Error(rpcError.message || 'Failed to create booking');
   }
 
-  // Fallback: direct insert (works without the migration applied)
+  // Attempt 2: RPC without created_by (requires migration 00002 only)
+  const { p_created_by: _, ...rpcParamsLegacy } = rpcParams;
+  const { data: rpcData2, error: rpcError2 } = await supabase.rpc('create_appointment_atomic', rpcParamsLegacy);
+
+  if (!rpcError2) {
+    return { id: rpcData2 };
+  }
+
+  if (!isFunctionMissing(rpcError2)) {
+    throw new Error(rpcError2.message || 'Failed to create booking');
+  }
+
+  // Attempt 3: direct insert without created_by (no migrations applied)
+  const { created_by: _cb, ...insertData } = appointment;
   const { data, error } = await supabase
     .from('appointments')
-    .insert([{ ...appointment, status: 'booked' }])
+    .insert([{ ...insertData, status: 'booked' }])
     .select()
     .maybeSingle();
 

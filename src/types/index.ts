@@ -51,6 +51,7 @@ export interface Appointment {
   end_datetime: string;
   price_at_booking: number;
   status: 'booked' | 'canceled';
+  created_by: 'admin' | 'customer';
   created_at: string;
   treatments?: Treatment;
 }
