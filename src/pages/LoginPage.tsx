@@ -55,9 +55,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Image panel — desktop only */}
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
+      <div className="hidden md:flex md:w-1/3 relative overflow-hidden">
         <img
-          src="/salon/IMG_8393.jpg"
+          src="/salon/gallery-14.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -73,7 +73,7 @@ export default function LoginPage() {
       {/* Mobile image banner */}
       <div className="md:hidden h-40 relative overflow-hidden">
         <img
-          src="/salon/IMG_8393.jpg"
+          src="/salon/gallery-14.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
         />

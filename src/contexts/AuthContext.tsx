@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  // Flag to prevent onAuthStateChange from overwriting the profile
+  // that signIn already loaded eagerly.
+  let skipNextAuthChange = false;
 
   const refreshProfile = async () => {
     if (!user) {
@@ -53,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     // In this function, do NOT use any await calls. Use `.then()` instead to avoid deadlocks.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (skipNextAuthChange) {
+        skipNextAuthChange = false;
+        return;
+      }
       setUser(session?.user ?? null);
       if (session?.user) {
         getProfile(session.user.id).then(setProfile);
@@ -66,12 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Tell the onAuthStateChange listener to skip the next event,
+      // because we load the profile eagerly below and don't want the
+      // listener to overwrite it with an async fetch that briefly
+      // leaves profile as null (causing RouteGuard to bounce).
+      skipNextAuthChange = true;
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        skipNextAuthChange = false;
+        throw error;
+      }
 
       // Eagerly load the profile before returning so that RouteGuard
       // sees the admin role immediately when the caller navigates.

@@ -55,7 +55,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
               <img
-                src="/salon/IMG_8393.jpg"
+                src="/salon/gallery-1.jpg"
                 alt="Nail art design"
                 loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
@@ -63,40 +63,40 @@ export default function HomePage() {
             </div>
             <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
               <img
-                src="/salon/IMG_8394.jpg"
-                alt="Floral nail art"
+                src="/salon/gallery-13.jpg"
+                alt="Nail art design"
                 loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
               <img
-                src="/salon/IMG_8397.jpg"
-                alt="Blue floral nail art"
+                src="/salon/gallery-16.jpg"
+                alt="Nail art design"
                 loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
               <img
-                src="/salon/IMG_8398.jpg"
-                alt="Sage green nail art"
+                src="/salon/gallery-5.jpg"
+                alt="Nail art design"
                 loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
               <img
-                src="/salon/IMG_8402.jpg"
-                alt="Leopard print nail art"
+                src="/salon/gallery-12.jpg"
+                alt="Nail art design"
                 loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
               <img
-                src="/salon/IMG_8403.jpg"
-                alt="Baby blue nail art"
+                src="/salon/gallery-15.jpg"
+                alt="Nail art design"
                 loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />

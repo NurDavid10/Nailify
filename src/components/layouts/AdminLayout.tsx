@@ -107,8 +107,16 @@ export default function AdminLayout() {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6 bg-muted/30">
-            <Outlet />
+          <main className="flex-1 overflow-y-auto p-6 relative">
+            <img
+              src="/salon/gallery-5.jpg"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-background/50 pointer-events-none" />
+            <div className="relative z-10">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

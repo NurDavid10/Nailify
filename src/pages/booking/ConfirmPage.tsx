@@ -99,7 +99,7 @@ export default function ConfirmPage() {
     <div className="relative min-h-screen py-8">
       {/* Subtle background image */}
       <img
-        src="/salon/IMG_8403.jpg"
+        src="/salon/gallery-17.jpg"
         alt=""
         className="fixed inset-0 w-full h-full object-cover opacity-[0.25] pointer-events-none"
       />

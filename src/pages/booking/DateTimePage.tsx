@@ -45,7 +45,7 @@ export default function DateTimePage() {
     <div className="relative min-h-screen py-8">
       {/* Subtle background image */}
       <img
-        src="/salon/IMG_8398.jpg"
+        src="/salon/gallery-11.jpg"
         alt=""
         className="fixed inset-0 w-full h-full object-cover opacity-[0.25] pointer-events-none"
       />
