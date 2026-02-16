@@ -51,7 +51,7 @@ export class AppointmentsService {
       status: apt.status,
       created_by: apt.createdBy,
       created_at: apt.createdAt.toISOString(),
-      treatments: apt.treatment ? this.transformTreatment(apt.treatment) : undefined,
+      treatments: apt.treatment ? AppointmentsService.transformTreatment(apt.treatment) : undefined,
     };
   }
 
@@ -67,7 +67,7 @@ export class AppointmentsService {
       orderBy: { startDatetime: 'asc' },
     });
 
-    return appointments.map(this.transformAppointment);
+    return appointments.map((apt) => AppointmentsService.transformAppointment(apt));
   }
 
   /**
@@ -92,7 +92,7 @@ export class AppointmentsService {
       orderBy: { startDatetime: 'asc' },
     });
 
-    return appointments.map(this.transformAppointment);
+    return appointments.map((apt) => AppointmentsService.transformAppointment(apt));
   }
 
   /**
@@ -170,7 +170,7 @@ export class AppointmentsService {
       }
     );
 
-    return this.transformAppointment(appointment);
+    return AppointmentsService.transformAppointment(appointment);
   }
 
   /**
@@ -185,6 +185,6 @@ export class AppointmentsService {
       },
     });
 
-    return this.transformAppointment(appointment);
+    return AppointmentsService.transformAppointment(appointment);
   }
 }

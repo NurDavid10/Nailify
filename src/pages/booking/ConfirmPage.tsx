@@ -91,7 +91,7 @@ export default function ConfirmPage() {
       const appointmentData = {
         customer_name: bookingData.customerName,
         phone: bookingData.phone,
-        notes: bookingData.notes || null,
+        notes: bookingData.notes || undefined,
         treatment_id: bookingData.selectedTreatment.id,
         start_datetime: selectedDate.toISOString(),
         end_datetime: endDateTime.toISOString(),

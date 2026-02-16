@@ -33,6 +33,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     try {
       const body = await response.json();
       errorMessage = body.message || errorMessage;
+
+      // Include validation errors if present
+      if (body.errors && Array.isArray(body.errors)) {
+        const validationErrors = body.errors
+          .map((err: any) => `${err.path?.join('.') || 'field'}: ${err.message}`)
+          .join(', ');
+        errorMessage += ` - ${validationErrors}`;
+      }
     } catch {
       // If JSON parsing fails, use default error message
     }

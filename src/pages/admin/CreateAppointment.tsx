@@ -114,7 +114,7 @@ export default function CreateAppointment() {
       await createAppointment({
         customer_name: data.customer_name,
         phone: data.phone,
-        notes: data.notes || null,
+        notes: data.notes || undefined,
         treatment_id: data.treatment_id,
         start_datetime: startDateTime.toISOString(),
         end_datetime: endDateTime.toISOString(),

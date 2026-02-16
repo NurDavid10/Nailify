@@ -109,14 +109,14 @@ export async function getUpcomingAppointments(): Promise<Appointment[]> {
 export async function createAppointment(appointment: {
   customer_name: string;
   phone: string;
-  notes: string | null;
+  notes?: string;
   treatment_id: string;
   start_datetime: string;
   end_datetime: string;
   price_at_booking: number;
   created_by?: 'admin' | 'customer';
 }): Promise<{ id: string }> {
-  const response = await api.post<Appointment>('/appointments', {
+  const payload = {
     customerName: appointment.customer_name,
     phone: appointment.phone,
     notes: appointment.notes,
@@ -125,7 +125,11 @@ export async function createAppointment(appointment: {
     endDatetime: appointment.end_datetime,
     priceAtBooking: appointment.price_at_booking,
     createdBy: appointment.created_by || 'customer',
-  });
+  };
+
+  console.log('[createAppointment] Sending payload:', JSON.stringify(payload, null, 2));
+
+  const response = await api.post<Appointment>('/appointments', payload);
 
   return { id: response.id };
 }

@@ -29,7 +29,10 @@ router.get(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const status = req.query.status as 'booked' | 'canceled' | undefined;
+    console.log('[GET /appointments] Fetching appointments with status:', status);
     const appointments = await AppointmentsService.getAppointments(status);
+    console.log('[GET /appointments] Found appointments:', appointments.length);
+    console.log('[GET /appointments] Appointments data:', JSON.stringify(appointments, null, 2));
     res.json(appointments);
   })
 );
@@ -55,9 +58,11 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    console.log('Received appointment request:', JSON.stringify(req.body, null, 2));
     const result = createAppointmentSchema.safeParse(req.body);
 
     if (!result.success) {
+      console.error('Validation failed:', result.error.errors);
       res.status(400).json({
         message: 'Validation error',
         errors: result.error.errors,
@@ -66,9 +71,12 @@ router.post(
     }
 
     try {
+      console.log('Creating appointment with data:', result.data);
       const appointment = await AppointmentsService.createAppointment(result.data);
+      console.log('Appointment created successfully:', appointment);
       res.status(201).json(appointment);
     } catch (error) {
+      console.error('Error creating appointment:', error);
       if (error instanceof Error && error.message === 'Time slot is no longer available') {
         res.status(409).json({ message: error.message });
       } else {

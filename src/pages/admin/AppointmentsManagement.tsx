@@ -12,7 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getUpcomingAppointments, cancelAppointment } from '@/db/api';
+import { getAppointments, cancelAppointment } from '@/db/api';
 import type { Appointment } from '@/types/index';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -26,10 +26,13 @@ export default function AppointmentsManagement() {
   const loadAppointments = async () => {
     setLoading(true);
     try {
-      const data = await getUpcomingAppointments();
+      console.log('[AppointmentsManagement] Fetching appointments...');
+      const data = await getAppointments('booked');
+      console.log('[AppointmentsManagement] Received appointments:', data);
+      console.log('[AppointmentsManagement] Number of appointments:', data.length);
       setAppointments(data);
     } catch (error) {
-      console.error('Failed to load appointments:', error);
+      console.error('[AppointmentsManagement] Failed to load appointments:', error);
     } finally {
       setLoading(false);
     }
@@ -75,7 +78,7 @@ export default function AppointmentsManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('admin.upcomingAppointments')}</CardTitle>
+          <CardTitle>{t('admin.appointments')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
