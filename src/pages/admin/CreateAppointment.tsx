@@ -104,10 +104,10 @@ export default function CreateAppointment() {
 
     const startDateTime = new Date(data.date);
     const [hours, minutes] = data.time.split(':').map(Number);
-    startDateTime.setHours(hours, minutes, 0, 0);
+    startDateTime.setUTCHours(hours, minutes, 0, 0);
 
     const endDateTime = new Date(startDateTime);
-    endDateTime.setMinutes(endDateTime.getMinutes() + treatment.duration_minutes);
+    endDateTime.setUTCMinutes(endDateTime.getUTCMinutes() + treatment.duration_minutes);
 
     setSubmitting(true);
     try {

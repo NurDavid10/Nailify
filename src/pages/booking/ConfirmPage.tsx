@@ -60,20 +60,19 @@ export default function ConfirmPage() {
     try {
       console.log('Booking data:', bookingData);
 
-      // Parse the ISO date string to get just the date part (YYYY-MM-DD)
-      const dateStr = bookingData.selectedDate.split('T')[0]; // "2026-02-20"
-      console.log('Date string:', dateStr);
-      console.log('Selected time:', bookingData.selectedTime);
+      // Use the actual slot timestamps instead of reconstructing them
+      // This ensures timezone consistency between slot selection and appointment creation
+      const startDateTime = bookingData.selectedSlotStart
+        ? new Date(bookingData.selectedSlotStart)
+        : (() => {
+            // Fallback for old booking data without slot timestamps
+            const dateStr = bookingData.selectedDate.split('T')[0];
+            const [hours, minutes] = bookingData.selectedTime.split(':').map(Number);
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+          })();
 
-      const [hours, minutes] = bookingData.selectedTime.split(':').map(Number);
-      console.log('Parsed hours:', hours, 'minutes:', minutes);
-
-      // Create the date in local timezone
-      const [year, month, day] = dateStr.split('-').map(Number);
-      console.log('Parsed date parts - year:', year, 'month:', month, 'day:', day);
-
-      const selectedDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-      console.log('Created start date:', selectedDate);
+      console.log('Start date from slot:', startDateTime.toISOString());
 
       // Handle both snake_case (duration_minutes) and camelCase (durationMinutes) for backward compatibility
       const durationMinutes = bookingData.selectedTreatment.duration_minutes ||
@@ -84,16 +83,16 @@ export default function ConfirmPage() {
         throw new Error('Invalid treatment duration');
       }
 
-      const endDateTime = new Date(selectedDate);
-      endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
-      console.log('Created end date:', endDateTime);
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setUTCMinutes(endDateTime.getUTCMinutes() + durationMinutes);
+      console.log('End date:', endDateTime.toISOString());
 
       const appointmentData = {
         customer_name: bookingData.customerName,
         phone: bookingData.phone,
         notes: bookingData.notes || undefined,
         treatment_id: bookingData.selectedTreatment.id,
-        start_datetime: selectedDate.toISOString(),
+        start_datetime: startDateTime.toISOString(),
         end_datetime: endDateTime.toISOString(),
         price_at_booking: Number(bookingData.selectedTreatment.price),
       };

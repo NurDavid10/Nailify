@@ -27,8 +27,8 @@ export class AvailabilityService {
     return rules.map((rule) => ({
       id: rule.id,
       specificDate: rule.specificDate.toISOString().split('T')[0],
-      startTime: this.formatTime(rule.startTime),
-      endTime: this.formatTime(rule.endTime),
+      startTime: AvailabilityService.formatTime(rule.startTime),
+      endTime: AvailabilityService.formatTime(rule.endTime),
       slotIntervalMinutes: rule.slotIntervalMinutes,
       createdAt: rule.createdAt,
     }));
@@ -40,9 +40,9 @@ export class AvailabilityService {
   static async createRule(data: CreateAvailabilityRuleDto) {
     const rule = await prisma.availabilityRule.create({
       data: {
-        specificDate: new Date(data.specificDate),
-        startTime: this.parseTime(data.startTime),
-        endTime: this.parseTime(data.endTime),
+        specificDate: new Date(data.specificDate + 'T00:00:00.000Z'),
+        startTime: AvailabilityService.parseTime(data.startTime),
+        endTime: AvailabilityService.parseTime(data.endTime),
         slotIntervalMinutes: data.slotIntervalMinutes,
       },
     });
@@ -50,8 +50,8 @@ export class AvailabilityService {
     return {
       id: rule.id,
       specificDate: rule.specificDate.toISOString().split('T')[0],
-      startTime: this.formatTime(rule.startTime),
-      endTime: this.formatTime(rule.endTime),
+      startTime: AvailabilityService.formatTime(rule.startTime),
+      endTime: AvailabilityService.formatTime(rule.endTime),
       slotIntervalMinutes: rule.slotIntervalMinutes,
       createdAt: rule.createdAt,
     };
@@ -93,6 +93,9 @@ export class AvailabilityService {
     // Parse the date string (YYYY-MM-DD)
     const date = new Date(dateStr + 'T00:00:00.000Z');
 
+    console.log('[getAvailableTimeSlots] Received dateStr:', dateStr);
+    console.log('[getAvailableTimeSlots] Parsed as UTC date:', date.toISOString());
+
     // Get all availability rules for this specific date (supports multiple shifts)
     const allRules = await prisma.availabilityRule.findMany({
       where: {
@@ -101,7 +104,18 @@ export class AvailabilityService {
       orderBy: { startTime: 'asc' },
     });
 
+    console.log('[getAvailableTimeSlots] Found availability rules:', allRules.length);
+    allRules.forEach((rule, idx) => {
+      console.log(`  Rule ${idx + 1}:`, {
+        specificDate: rule.specificDate.toISOString(),
+        startTime: rule.startTime.toISOString(),
+        endTime: rule.endTime.toISOString(),
+        interval: rule.slotIntervalMinutes,
+      });
+    });
+
     if (!allRules || allRules.length === 0) {
+      console.log('[getAvailableTimeSlots] No rules found, returning empty array');
       return [];
     }
 
@@ -110,6 +124,12 @@ export class AvailabilityService {
     startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setUTCHours(23, 59, 59, 999);
+
+    console.log('[getAvailableTimeSlots] Querying appointments for date range:', {
+      dateStr,
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+    });
 
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -125,13 +145,21 @@ export class AvailabilityService {
       },
     });
 
+    console.log('[getAvailableTimeSlots] Found appointments:', appointments.map(apt => ({
+      start: apt.startDatetime.toISOString(),
+      end: apt.endDatetime.toISOString(),
+    })));
+
     // Generate time slots from all rules
     const slots: TimeSlot[] = [];
     const now = new Date();
+    console.log('[getAvailableTimeSlots] Current time (now):', now.toISOString());
 
     for (const rules of allRules) {
-      const startTime = this.formatTime(rules.startTime);
-      const endTime = this.formatTime(rules.endTime);
+      const startTime = AvailabilityService.formatTime(rules.startTime);
+      const endTime = AvailabilityService.formatTime(rules.endTime);
+
+      console.log('[getAvailableTimeSlots] Processing rule with times:', { startTime, endTime });
 
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const [endHour, endMinute] = endTime.split(':').map(Number);
@@ -142,6 +170,11 @@ export class AvailabilityService {
       const endTimeDate = new Date(date);
       endTimeDate.setUTCHours(endHour, endMinute, 0, 0);
 
+      console.log('[getAvailableTimeSlots] Generating slots from', currentTime.toISOString(), 'to', endTimeDate.toISOString());
+
+      let slotsGenerated = 0;
+      let slotsSkippedPast = 0;
+
       while (currentTime < endTimeDate) {
         const slotStart = new Date(currentTime);
         const slotEnd = new Date(
@@ -150,19 +183,33 @@ export class AvailabilityService {
 
         // Skip slots that have already passed (for today)
         if (slotStart <= now) {
+          slotsSkippedPast++;
           currentTime = slotEnd;
           continue;
         }
+
+        slotsGenerated++;
 
         // Check if slot is available (not overlapping with existing appointments)
         const isAvailable = !appointments.some((apt) => {
           const aptStart = apt.startDatetime;
           const aptEnd = apt.endDatetime;
-          return (
+          const overlaps = (
             (slotStart >= aptStart && slotStart < aptEnd) ||
             (slotEnd > aptStart && slotEnd <= aptEnd) ||
             (slotStart <= aptStart && slotEnd >= aptEnd)
           );
+
+          if (overlaps) {
+            console.log('[getAvailableTimeSlots] Slot overlaps with appointment:', {
+              slotStart: slotStart.toISOString(),
+              slotEnd: slotEnd.toISOString(),
+              aptStart: aptStart.toISOString(),
+              aptEnd: aptEnd.toISOString(),
+            });
+          }
+
+          return overlaps;
         });
 
         slots.push({
@@ -173,7 +220,12 @@ export class AvailabilityService {
 
         currentTime = slotEnd;
       }
+
+      console.log('[getAvailableTimeSlots] Rule generated:', slotsGenerated, 'slots, skipped', slotsSkippedPast, 'past slots');
     }
+
+    console.log('[getAvailableTimeSlots] Total slots generated:', slots.length);
+    console.log('[getAvailableTimeSlots] Available slots:', slots.filter(s => s.available).length);
 
     return slots;
   }

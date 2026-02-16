@@ -15,6 +15,7 @@ export default function DateTimePage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [loading, setLoading] = useState(false);
   const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
 
@@ -28,6 +29,7 @@ export default function DateTimePage() {
     if (selectedDate) {
       setLoading(true);
       setSelectedTime(null);
+      setSelectedSlot(null);
       getAvailableTimeSlots(selectedDate)
         .then(setTimeSlots)
         .catch(console.error)
@@ -36,10 +38,12 @@ export default function DateTimePage() {
   }, [selectedDate]);
 
   const handleNext = () => {
-    if (selectedDate && selectedTime) {
+    if (selectedDate && selectedTime && selectedSlot) {
       const bookingData = {
         selectedDate: selectedDate.toISOString(),
         selectedTime,
+        selectedSlotStart: selectedSlot.start.toISOString(),
+        selectedSlotEnd: selectedSlot.end.toISOString(),
       };
       localStorage.setItem('bookingData', JSON.stringify(bookingData));
       navigate('/booking/treatment');
@@ -95,19 +99,31 @@ export default function DateTimePage() {
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                   </div>
+                ) : timeSlots.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    {t('booking.noSlots')}
+                  </p>
                 ) : availableSlots.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     {t('booking.noSlots')}
                   </p>
                 ) : (
                   <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                    {availableSlots.map((slot) => {
+                    {timeSlots.map((slot) => {
                       const timeStr = format(slot.start, 'HH:mm');
+                      const isAvailable = slot.available;
+                      const slotKey = slot.start.toISOString();
                       return (
                         <Button
-                          key={timeStr}
+                          key={slotKey}
                           variant={selectedTime === timeStr ? 'default' : 'outline'}
-                          onClick={() => setSelectedTime(timeStr)}
+                          onClick={() => {
+                            if (isAvailable) {
+                              setSelectedTime(timeStr);
+                              setSelectedSlot(slot);
+                            }
+                          }}
+                          disabled={!isAvailable}
                           className="h-12"
                         >
                           {timeStr}

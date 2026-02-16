@@ -10,7 +10,9 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   defaultAdminEmail: process.env.DEFAULT_ADMIN_EMAIL || 'admin@nailsbooking.local',
   defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  corsOrigin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:5173'],
 };
 
 // Validate required env vars

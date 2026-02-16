@@ -54,18 +54,36 @@ export async function deleteTreatment(id: string): Promise<void> {
 
 // Availability Rules
 export async function getAvailabilityRules(): Promise<AvailabilityRule[]> {
-  return api.get<AvailabilityRule[]>('/availability/rules');
+  const rules = await api.get<any[]>('/availability/rules');
+  // Transform camelCase to snake_case
+  return rules.map(rule => ({
+    id: rule.id,
+    specific_date: rule.specificDate,
+    start_time: rule.startTime,
+    end_time: rule.endTime,
+    slot_interval_minutes: rule.slotIntervalMinutes,
+    created_at: rule.createdAt,
+  }));
 }
 
 export async function createAvailabilityRule(
   rule: Omit<AvailabilityRule, 'id' | 'created_at'>
 ): Promise<AvailabilityRule> {
-  return api.post<AvailabilityRule>('/availability/rules', {
+  const response = await api.post<any>('/availability/rules', {
     specificDate: rule.specific_date,
     startTime: rule.start_time,
     endTime: rule.end_time,
     slotIntervalMinutes: rule.slot_interval_minutes,
   });
+  // Transform camelCase to snake_case
+  return {
+    id: response.id,
+    specific_date: response.specificDate,
+    start_time: response.startTime,
+    end_time: response.endTime,
+    slot_interval_minutes: response.slotIntervalMinutes,
+    created_at: response.createdAt,
+  };
 }
 
 export async function deleteAvailabilityRule(id: string): Promise<void> {

@@ -261,3 +261,12 @@ For issues or questions:
 ## License
 
 © 2026 Nails Booking. All rights reserved.
+
+
+
+
+
+
+
+
+
