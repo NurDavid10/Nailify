@@ -115,6 +115,13 @@ const translations: Record<Language, Record<string, string>> = {
     'backgrounds.maxSize': 'الحد الأقصى: 5 ميجابايت',
     'backgrounds.confirmReset': 'هل أنت متأكد من إعادة تعيين إلى الافتراضي؟',
     'gallery.image': 'صورة',
+    'gallery.addImage': 'إضافة صورة',
+    'gallery.replace': 'استبدال',
+    'gallery.delete': 'حذف',
+    'gallery.confirmDelete': 'هل أنت متأكد من حذف هذه الصورة؟',
+    'gallery.uploadSuccess': 'تم رفع الصورة بنجاح',
+    'gallery.addSuccess': 'تمت إضافة الصورة بنجاح',
+    'gallery.deleteSuccess': 'تم حذف الصورة بنجاح',
 
     // Days of week
     'day.sunday': 'الأحد',
@@ -235,6 +242,13 @@ const translations: Record<Language, Record<string, string>> = {
     'backgrounds.maxSize': 'גודל מקסימלי: 5MB',
     'backgrounds.confirmReset': 'האם אתה בטוח שברצונך לאפס לברירת מחדל?',
     'gallery.image': 'תמונה',
+    'gallery.addImage': 'הוסף תמונה',
+    'gallery.replace': 'החלף',
+    'gallery.delete': 'מחק',
+    'gallery.confirmDelete': 'האם אתה בטוח שברצונך למחוק תמונה זו?',
+    'gallery.uploadSuccess': 'התמונה הועלתה בהצלחה',
+    'gallery.addSuccess': 'התמונה נוספה בהצלחה',
+    'gallery.deleteSuccess': 'התמונה נמחקה בהצלחה',
 
     // Days of week
     'day.sunday': 'ראשון',
@@ -355,6 +369,13 @@ const translations: Record<Language, Record<string, string>> = {
     'backgrounds.maxSize': 'Max size: 5MB',
     'backgrounds.confirmReset': 'Are you sure you want to reset to default?',
     'gallery.image': 'Image',
+    'gallery.addImage': 'Add Image',
+    'gallery.replace': 'Replace',
+    'gallery.delete': 'Delete',
+    'gallery.confirmDelete': 'Are you sure you want to delete this image?',
+    'gallery.uploadSuccess': 'Image uploaded successfully',
+    'gallery.addSuccess': 'Image added successfully',
+    'gallery.deleteSuccess': 'Image deleted successfully',
 
     // Days of week
     'day.sunday': 'Sunday',

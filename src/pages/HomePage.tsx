@@ -42,7 +42,7 @@ export default function HomePage() {
     getGalleryImages()
       .then((images: GalleryImage[]) => {
         const imageUrls = images.map((img) => {
-          const url = img.currentUrl || img.defaultUrl;
+          const url = img.url;
           // If it's an uploaded image, prepend the API base URL
           if (url && url.startsWith('/uploads/')) {
             const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -101,7 +101,7 @@ export default function HomePage() {
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">
             {t('home.title')}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {galleryImages.map((imageUrl, index) => (
               <div key={index} className="aspect-square rounded-2xl overflow-hidden shadow-md">
                 <img

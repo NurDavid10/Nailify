@@ -85,8 +85,43 @@ router.get(
 );
 
 /**
+ * POST /api/backgrounds/gallery/add
+ * Add a new gallery image (admin only)
+ */
+router.post(
+  '/gallery/add',
+  authenticateToken,
+  requireAdmin,
+  uploadBackground.single('image'),
+  asyncHandler(async (req, res) => {
+    const file = req.file;
+
+    if (!file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
+    const ext = path.extname(file.filename);
+    const newFilename = `gallery_${timestamp}${ext}`;
+    const oldPath = path.join(uploadsDir, file.filename);
+    const newPath = path.join(uploadsDir, newFilename);
+
+    // Rename file
+    fs.renameSync(oldPath, newPath);
+
+    const imageUrl = `/uploads/backgrounds/${newFilename}`;
+    const image = await BackgroundsService.addGalleryImage(imageUrl);
+
+    res.json(image);
+  })
+);
+
+/**
  * POST /api/backgrounds/gallery/:imageId/upload
- * Upload a gallery image (admin only)
+ * Replace a gallery image (admin only)
  */
 router.post(
   '/gallery/:imageId/upload',
@@ -94,7 +129,7 @@ router.post(
   requireAdmin,
   uploadBackground.single('image'),
   asyncHandler(async (req, res) => {
-    const imageId = parseInt(req.params.imageId, 10);
+    const imageId = req.params.imageId;
     const file = req.file;
 
     if (!file) {
@@ -121,16 +156,16 @@ router.post(
 
 /**
  * DELETE /api/backgrounds/gallery/:imageId
- * Delete custom gallery image (revert to default) - admin only
+ * Delete a gallery image - admin only
  */
 router.delete(
   '/gallery/:imageId',
   authenticateToken,
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const imageId = parseInt(req.params.imageId, 10);
+    const imageId = req.params.imageId;
     await BackgroundsService.deleteGalleryImage(imageId);
-    res.json({ message: 'Gallery image reset to default' });
+    res.json({ message: 'Gallery image deleted' });
   })
 );
 

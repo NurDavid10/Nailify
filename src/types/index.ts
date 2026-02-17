@@ -83,8 +83,8 @@ export interface PageBackground {
 }
 
 export interface GalleryImage {
-  id: number;
-  currentUrl: string | null;
-  defaultUrl: string;
+  id: string;
+  url: string;
+  isDefault: boolean;
 }
 

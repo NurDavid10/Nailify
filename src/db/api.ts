@@ -224,7 +224,28 @@ export async function getGalleryImages(): Promise<GalleryImage[]> {
   return api.get<GalleryImage[]>('/backgrounds/gallery/images');
 }
 
-export async function uploadGalleryImage(imageId: number, file: File): Promise<string> {
+export async function addGalleryImage(file: File): Promise<GalleryImage> {
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`${API_BASE}/backgrounds/gallery/add`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Upload failed');
+  }
+
+  return response.json();
+}
+
+export async function uploadGalleryImage(imageId: string, file: File): Promise<string> {
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
   const formData = new FormData();
   formData.append('image', file);
@@ -246,6 +267,6 @@ export async function uploadGalleryImage(imageId: number, file: File): Promise<s
   return data.url;
 }
 
-export async function deleteGalleryImage(imageId: number): Promise<void> {
+export async function deleteGalleryImage(imageId: string): Promise<void> {
   await api.delete(`/backgrounds/gallery/${imageId}`);
 }

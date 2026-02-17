@@ -88,13 +88,13 @@ const PAGE_CONFIGS: PageConfig[] = [
   },
 ];
 
-const GALLERY_IMAGES = [
-  { id: 1, defaultUrl: '/salon/gallery-1.jpg' },
-  { id: 2, defaultUrl: '/salon/gallery-13.jpg' },
-  { id: 3, defaultUrl: '/salon/gallery-16.jpg' },
-  { id: 4, defaultUrl: '/salon/gallery-5.jpg' },
-  { id: 5, defaultUrl: '/salon/gallery-12.jpg' },
-  { id: 6, defaultUrl: '/salon/gallery-15.jpg' },
+const DEFAULT_GALLERY_IMAGES = [
+  '/salon/gallery-1.jpg',
+  '/salon/gallery-13.jpg',
+  '/salon/gallery-16.jpg',
+  '/salon/gallery-5.jpg',
+  '/salon/gallery-12.jpg',
+  '/salon/gallery-15.jpg',
 ];
 
 export class BackgroundsService {
@@ -184,31 +184,64 @@ export class BackgroundsService {
   }
 
   /**
-   * Get all gallery images
+   * Get all gallery images (both default and custom)
    */
   static async getGalleryImages() {
-    const images = await Promise.all(
-      GALLERY_IMAGES.map(async (img) => {
-        const settingKey = `gallery_${img.id}`;
-        const setting = await prisma.setting.findUnique({
-          where: { key: settingKey },
-        });
+    // Get all gallery settings from database
+    const settings = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'gallery_',
+        },
+      },
+      orderBy: {
+        key: 'asc',
+      },
+    });
 
-        return {
-          id: img.id,
-          currentUrl: setting?.value || null,
-          defaultUrl: img.defaultUrl,
-        };
-      })
-    );
+    // If no custom images, return defaults
+    if (settings.length === 0) {
+      return DEFAULT_GALLERY_IMAGES.map((url, index) => ({
+        id: `default_${index}`,
+        url,
+        isDefault: true,
+      }));
+    }
 
-    return images;
+    // Return custom images
+    return settings.map((setting) => ({
+      id: setting.key.replace('gallery_', ''),
+      url: setting.value,
+      isDefault: false,
+    }));
+  }
+
+  /**
+   * Add a new gallery image
+   */
+  static async addGalleryImage(imageUrl: string) {
+    // Generate unique ID using timestamp
+    const imageId = Date.now().toString();
+    const settingKey = `gallery_${imageId}`;
+
+    const setting = await prisma.setting.create({
+      data: {
+        key: settingKey,
+        value: imageUrl,
+      },
+    });
+
+    return {
+      id: imageId,
+      url: setting.value,
+      isDefault: false,
+    };
   }
 
   /**
    * Update a gallery image
    */
-  static async updateGalleryImage(imageId: number, imageUrl: string) {
+  static async updateGalleryImage(imageId: string, imageUrl: string) {
     const settingKey = `gallery_${imageId}`;
 
     const setting = await prisma.setting.upsert({
@@ -227,9 +260,9 @@ export class BackgroundsService {
   }
 
   /**
-   * Delete a gallery image (revert to default)
+   * Delete a gallery image
    */
-  static async deleteGalleryImage(imageId: number) {
+  static async deleteGalleryImage(imageId: string) {
     const settingKey = `gallery_${imageId}`;
 
     // Delete the setting
@@ -240,7 +273,7 @@ export class BackgroundsService {
     // Delete the file if it exists
     const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
     const files = fs.readdirSync(uploadsDir);
-    const fileToDelete = files.find((file) => file.startsWith(`gallery_${imageId}`));
+    const fileToDelete = files.find((file) => file.includes(`gallery_${imageId}`));
 
     if (fileToDelete) {
       const filePath = path.join(uploadsDir, fileToDelete);

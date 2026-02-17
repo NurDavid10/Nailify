@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, RotateCcw, Image as ImageIcon } from 'lucide-react';
+import { Upload, RotateCcw, Image as ImageIcon, Trash2, Plus } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   getPageBackgrounds,
@@ -12,6 +12,7 @@ import {
   getGalleryImages,
   uploadGalleryImage,
   deleteGalleryImage,
+  addGalleryImage,
 } from '@/db/api';
 import type { PageBackground, GalleryImage } from '@/types/index';
 
@@ -22,7 +23,8 @@ export default function AppearanceManagement() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
-  const [uploadingGalleryId, setUploadingGalleryId] = useState<number | null>(null);
+  const [uploadingGalleryId, setUploadingGalleryId] = useState<string | null>(null);
+  const [addingGalleryImage, setAddingGalleryImage] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -95,7 +97,7 @@ export default function AppearanceManagement() {
     }
   };
 
-  const handleGalleryFileSelect = async (imageId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryFileSelect = async (imageId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !validateFile(file)) return;
 
@@ -105,7 +107,7 @@ export default function AppearanceManagement() {
       await uploadGalleryImage(imageId, file);
       toast({
         title: t('common.success'),
-        description: 'Gallery image uploaded successfully',
+        description: t('gallery.uploadSuccess'),
       });
       await loadData();
     } catch (error) {
@@ -116,6 +118,31 @@ export default function AppearanceManagement() {
       });
     } finally {
       setUploadingGalleryId(null);
+      event.target.value = '';
+    }
+  };
+
+  const handleAddGalleryImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !validateFile(file)) return;
+
+    setAddingGalleryImage(true);
+
+    try {
+      await addGalleryImage(file);
+      toast({
+        title: t('common.success'),
+        description: t('gallery.addSuccess'),
+      });
+      await loadData();
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : 'Failed to add image',
+        variant: 'destructive',
+      });
+    } finally {
+      setAddingGalleryImage(false);
       event.target.value = '';
     }
   };
@@ -139,20 +166,20 @@ export default function AppearanceManagement() {
     }
   };
 
-  const handleResetGalleryImage = async (imageId: number) => {
-    if (!confirm(t('backgrounds.confirmReset'))) return;
+  const handleDeleteGalleryImage = async (imageId: string) => {
+    if (!confirm(t('gallery.confirmDelete'))) return;
 
     try {
       await deleteGalleryImage(imageId);
       toast({
         title: t('common.success'),
-        description: 'Gallery image reset to default',
+        description: t('gallery.deleteSuccess'),
       });
       await loadData();
     } catch (error) {
       toast({
         title: t('common.error'),
-        description: error instanceof Error ? error.message : 'Failed to reset image',
+        description: error instanceof Error ? error.message : 'Failed to delete image',
         variant: 'destructive',
       });
     }
@@ -183,7 +210,7 @@ export default function AppearanceManagement() {
   };
 
   const getGalleryImageUrl = (img: GalleryImage) => {
-    return getImageUrl(img.currentUrl || img.defaultUrl);
+    return getImageUrl(img.url);
   };
 
   if (loading) {
@@ -299,7 +326,6 @@ export default function AppearanceManagement() {
           {galleryImages.map((img) => {
             const imageUrl = getGalleryImageUrl(img);
             const isUploading = uploadingGalleryId === img.id;
-            const hasCustomImage = img.currentUrl !== null;
 
             return (
               <Card key={img.id} className="overflow-hidden">
@@ -310,7 +336,7 @@ export default function AppearanceManagement() {
                       alt={`${t('gallery.image')} ${img.id}`}
                       className="w-full h-full object-cover"
                     />
-                    {hasCustomImage && (
+                    {!img.isDefault && (
                       <div className="absolute top-1 right-1">
                         <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
                           {t('backgrounds.custom')}
@@ -331,18 +357,18 @@ export default function AppearanceManagement() {
                       }}
                     >
                       <Upload className="h-3 w-3 me-1" />
-                      {isUploading ? t('backgrounds.uploading') : t('backgrounds.upload')}
+                      {isUploading ? t('backgrounds.uploading') : t('gallery.replace')}
                     </Button>
 
-                    {hasCustomImage && (
+                    {!img.isDefault && (
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         className="w-full"
-                        onClick={() => handleResetGalleryImage(img.id)}
+                        onClick={() => handleDeleteGalleryImage(img.id)}
                       >
-                        <RotateCcw className="h-3 w-3 me-1" />
-                        {t('backgrounds.reset')}
+                        <Trash2 className="h-3 w-3 me-1" />
+                        {t('gallery.delete')}
                       </Button>
                     )}
 
@@ -358,6 +384,35 @@ export default function AppearanceManagement() {
               </Card>
             );
           })}
+
+          {/* Add Image Card */}
+          <Card className="overflow-hidden border-dashed border-2">
+            <CardContent className="p-4 h-full flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled={addingGalleryImage}
+                  onClick={() => {
+                    const input = document.getElementById('file-gallery-add') as HTMLInputElement;
+                    input?.click();
+                  }}
+                  className="w-full aspect-square flex flex-col gap-2"
+                >
+                  <Plus className="h-8 w-8" />
+                  <span className="text-sm">{addingGalleryImage ? t('backgrounds.uploading') : t('gallery.addImage')}</span>
+                </Button>
+
+                <input
+                  id="file-gallery-add"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAddGalleryImage}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
