@@ -121,7 +121,7 @@ export default function AppointmentsManagement() {
                         <TableCell className="text-right">
                           {appointment.status === 'booked' && (
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="icon"
                               onClick={() => handleCancel(appointment.id)}
                             >

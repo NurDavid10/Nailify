@@ -3,8 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
+import cron from 'node-cron';
 import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
+import { ReminderService } from './services/reminder.service';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -14,6 +16,7 @@ import appointmentsRoutes from './routes/appointments.routes';
 import settingsRoutes from './routes/settings.routes';
 import adminSetupRoutes from './routes/admin-setup.routes';
 import backgroundsRoutes from './routes/backgrounds.routes';
+import remindersRoutes from './routes/reminders.routes';
 
 const app = express();
 
@@ -54,6 +57,7 @@ app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminSetupRoutes);
 app.use('/api/backgrounds', backgroundsRoutes);
+app.use('/api/reminders', remindersRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -68,6 +72,19 @@ app.listen(config.port, () => {
   console.log(`🚀 Server running on http://localhost:${config.port}`);
   console.log(`📊 Environment: ${config.nodeEnv}`);
   console.log(`🔒 CORS origin: ${config.corsOrigin}`);
+
+  // Start cron job for WhatsApp reminders (runs every 10 minutes)
+  cron.schedule('*/10 * * * *', async () => {
+    console.log('[Cron] Running WhatsApp reminder check...');
+    try {
+      const results = await ReminderService.sendWhatsAppReminders();
+      console.log('[Cron] Reminder check complete:', results);
+    } catch (error) {
+      console.error('[Cron] Error in reminder job:', error);
+    }
+  });
+
+  console.log('⏰ WhatsApp reminder cron job started (every 10 minutes)');
 });
 
 // Handle uncaught exceptions

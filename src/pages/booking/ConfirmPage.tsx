@@ -85,7 +85,8 @@ export default function ConfirmPage() {
       }
 
       const endDateTime = new Date(startDateTime);
-      endDateTime.setUTCMinutes(endDateTime.getUTCMinutes() + durationMinutes);
+      // Use local time methods for consistency
+      endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
       console.log('End date:', endDateTime.toISOString());
 
       const appointmentData = {

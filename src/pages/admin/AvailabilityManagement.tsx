@@ -257,7 +257,7 @@ export default function AvailabilityManagement() {
                       <TableCell>{rule.slot_interval_minutes} min</TableCell>
                       <TableCell className="text-right">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="icon"
                           onClick={() => handleDelete(rule.id)}
                         >

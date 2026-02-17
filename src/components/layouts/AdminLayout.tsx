@@ -47,7 +47,7 @@ function Sidebar() {
           return (
             <Link key={item.href} to={item.href}>
               <Button
-                variant={isActive ? 'default' : 'ghost'}
+                variant={isActive ? 'default' : 'secondary'}
                 className="w-full justify-start gap-3"
               >
                 <item.icon className="h-5 w-5" />

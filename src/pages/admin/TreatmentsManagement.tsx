@@ -306,14 +306,14 @@ export default function TreatmentsManagement() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
                             onClick={() => handleOpenDialog(treatment)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
                             onClick={() => handleDelete(treatment.id)}
                           >

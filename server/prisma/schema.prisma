@@ -69,11 +69,25 @@ model Appointment {
   createdBy       String   @default("customer") @map("created_by")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  treatment Treatment @relation(fields: [treatmentId], references: [id], onDelete: Restrict)
+  treatment Treatment             @relation(fields: [treatmentId], references: [id], onDelete: Restrict)
+  reminders AppointmentReminder[]
 
   @@index([startDatetime], map: "idx_appointments_start_datetime")
   @@index([status], map: "idx_appointments_status")
   @@map("appointments")
+}
+
+model AppointmentReminder {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointmentId String   @map("appointment_id") @db.Uuid
+  sentAt        DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+  status        String   // 'sent', 'failed'
+  errorMessage  String?  @map("error_message")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId])
+  @@map("appointment_reminders")
 }
 
 model Setting {

@@ -1,0 +1,286 @@
+import { PrismaClient } from '@prisma/client';
+import twilio from 'twilio';
+
+const prisma = new PrismaClient();
+
+interface AppointmentWithTreatment {
+  id: string;
+  customerName: string;
+  phone: string;
+  startDatetime: Date;
+  priceAtBooking: number;
+  treatment: {
+    nameAr: string;
+    nameHe: string;
+    nameEn: string;
+  };
+}
+
+export class ReminderService {
+  private static twilioClient: twilio.Twilio | null = null;
+
+  /**
+   * Initialize Twilio client
+   */
+  private static getTwilioClient(): twilio.Twilio | null {
+    if (this.twilioClient) {
+      return this.twilioClient;
+    }
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+    if (!accountSid || !authToken) {
+      console.warn('[Reminder] Twilio credentials not configured');
+      return null;
+    }
+
+    this.twilioClient = twilio(accountSid, authToken);
+    return this.twilioClient;
+  }
+
+  /**
+   * Main function to check and send WhatsApp reminders
+   * Called by cron job every 10 minutes
+   */
+  static async sendWhatsAppReminders(): Promise<{
+    total: number;
+    sent: number;
+    failed: number;
+    skipped: number;
+  }> {
+    console.log('[Reminder] Starting reminder check...');
+
+    const client = this.getTwilioClient();
+    if (!client) {
+      console.log('[Reminder] Twilio not configured - skipping reminders');
+      return { total: 0, sent: 0, failed: 0, skipped: 0 };
+    }
+
+    // Get appointments starting in 55-65 minutes
+    const now = new Date();
+    const startWindow = new Date(now.getTime() + 55 * 60 * 1000);
+    const endWindow = new Date(now.getTime() + 65 * 60 * 1000);
+
+    console.log('[Reminder] Checking appointments between:', {
+      start: startWindow.toISOString(),
+      end: endWindow.toISOString(),
+    });
+
+    // Query appointments that need reminders
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        status: 'booked',
+        startDatetime: {
+          gte: startWindow,
+          lte: endWindow,
+        },
+        // Only get appointments without reminders sent yet
+        reminders: {
+          none: {},
+        },
+      },
+      include: {
+        treatment: true,
+      },
+    });
+
+    console.log(`[Reminder] Found ${appointments.length} appointments to remind`);
+
+    if (appointments.length === 0) {
+      return { total: 0, sent: 0, failed: 0, skipped: 0 };
+    }
+
+    const results = {
+      total: appointments.length,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+    };
+
+    // Send reminders for each appointment
+    for (const appointment of appointments) {
+      try {
+        const success = await this.sendWhatsAppMessage(
+          client,
+          appointment as unknown as AppointmentWithTreatment
+        );
+
+        if (success) {
+          results.sent++;
+        } else {
+          results.failed++;
+        }
+      } catch (error) {
+        console.error('[Reminder] Error processing appointment:', appointment.id, error);
+        results.failed++;
+      }
+    }
+
+    console.log('[Reminder] Results:', results);
+    return results;
+  }
+
+  /**
+   * Send WhatsApp message via Twilio for a single appointment
+   */
+  private static async sendWhatsAppMessage(
+    client: twilio.Twilio,
+    appointment: AppointmentWithTreatment
+  ): Promise<boolean> {
+    const whatsappFrom = process.env.TWILIO_WHATSAPP_NUMBER;
+
+    if (!whatsappFrom) {
+      console.error('[Reminder] TWILIO_WHATSAPP_NUMBER not configured');
+      return false;
+    }
+
+    try {
+      // Format the message (detect language based on phone prefix or use multilingual)
+      const message = this.formatWhatsAppMessage(appointment);
+
+      // Ensure phone number has + prefix
+      const toNumber = appointment.phone.startsWith('+')
+        ? `whatsapp:${appointment.phone}`
+        : `whatsapp:+${appointment.phone}`;
+
+      console.log(`[Reminder] Sending WhatsApp to ${appointment.phone} (${appointment.customerName})`);
+
+      // Send via Twilio WhatsApp API
+      await client.messages.create({
+        from: whatsappFrom,
+        to: toNumber,
+        body: message,
+      });
+
+      console.log(`[Reminder] Successfully sent WhatsApp to ${appointment.phone}`);
+
+      // Record successful reminder
+      await prisma.appointmentReminder.create({
+        data: {
+          appointmentId: appointment.id,
+          status: 'sent',
+          sentAt: new Date(),
+        },
+      });
+
+      return true;
+    } catch (error) {
+      console.error('[Reminder] Failed to send WhatsApp:', error);
+
+      // Record failed reminder
+      await prisma.appointmentReminder.create({
+        data: {
+          appointmentId: appointment.id,
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          sentAt: new Date(),
+        },
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Format WhatsApp message with multilingual support
+   */
+  private static formatWhatsAppMessage(appointment: AppointmentWithTreatment): string {
+    const appointmentTime = new Date(appointment.startDatetime);
+
+    // Format date and time in local timezone (Asia/Jerusalem)
+    const dateStr = appointmentTime.toLocaleDateString('en-US', {
+      timeZone: 'Asia/Jerusalem',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const timeStr = appointmentTime.toLocaleTimeString('en-US', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    // Multilingual message (Arabic, Hebrew, English)
+    const message = `
+🌸 *تذكير بالموعد / Appointment Reminder / תזכורת לפגישה* 🌸
+
+*العربية:*
+مرحباً ${appointment.customerName} 👋
+لديك موعد خلال ساعة واحدة!
+
+📅 التاريخ: ${dateStr}
+🕐 الوقت: ${timeStr}
+💅 الخدمة: ${appointment.treatment.nameAr}
+💰 السعر: ₪${appointment.priceAtBooking}
+
+نتطلع لرؤيتك! ✨
+
+━━━━━━━━━━━━━━━━
+
+*עברית:*
+שלום ${appointment.customerName} 👋
+יש לך פגישה בעוד שעה!
+
+📅 תאריך: ${dateStr}
+🕐 שעה: ${timeStr}
+💅 טיפול: ${appointment.treatment.nameHe}
+💰 מחיר: ₪${appointment.priceAtBooking}
+
+אנחנו מצפים לראותך! ✨
+
+━━━━━━━━━━━━━━━━
+
+*English:*
+Hi ${appointment.customerName} 👋
+You have an appointment in 1 hour!
+
+📅 Date: ${dateStr}
+🕐 Time: ${timeStr}
+💅 Treatment: ${appointment.treatment.nameEn}
+💰 Price: ₪${appointment.priceAtBooking}
+
+Looking forward to seeing you! ✨
+    `.trim();
+
+    return message;
+  }
+
+  /**
+   * Get reminder statistics for admin dashboard
+   */
+  static async getReminderStats(): Promise<{
+    totalSent: number;
+    totalFailed: number;
+    recentReminders: any[];
+  }> {
+    const [totalSent, totalFailed, recentReminders] = await Promise.all([
+      prisma.appointmentReminder.count({
+        where: { status: 'sent' },
+      }),
+      prisma.appointmentReminder.count({
+        where: { status: 'failed' },
+      }),
+      prisma.appointmentReminder.findMany({
+        take: 10,
+        orderBy: { sentAt: 'desc' },
+        include: {
+          appointment: {
+            include: {
+              treatment: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      totalSent,
+      totalFailed,
+      recentReminders,
+    };
+  }
+}

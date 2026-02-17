@@ -105,9 +105,12 @@ export default function CreateAppointment() {
     const treatment = treatments.find((t) => t.id === data.treatment_id);
     if (!treatment || !selectedSlot) return;
 
-    // Use the actual slot timestamps to ensure timezone consistency
+    // Use the actual slot start timestamp to ensure timezone consistency
     const startDateTime = selectedSlot.start;
-    const endDateTime = selectedSlot.end;
+
+    // Calculate end time based on treatment duration (not slot end time!)
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setMinutes(endDateTime.getMinutes() + treatment.duration_minutes);
 
     setSubmitting(true);
     try {

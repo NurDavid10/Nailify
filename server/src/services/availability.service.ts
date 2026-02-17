@@ -164,11 +164,12 @@ export class AvailabilityService {
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const [endHour, endMinute] = endTime.split(':').map(Number);
 
-      let currentTime = new Date(date);
-      currentTime.setUTCHours(startHour, startMinute, 0, 0);
+      // Create date in local timezone (Israel) - NOT UTC
+      // This ensures admin's input time (e.g., 16:00) is treated as local time
+      const [year, month, day] = dateStr.split('-').map(Number);
+      let currentTime = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
 
-      const endTimeDate = new Date(date);
-      endTimeDate.setUTCHours(endHour, endMinute, 0, 0);
+      const endTimeDate = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
 
       console.log('[getAvailableTimeSlots] Generating slots from', currentTime.toISOString(), 'to', endTimeDate.toISOString());
 
@@ -231,21 +232,23 @@ export class AvailabilityService {
   }
 
   /**
-   * Helper to format time from Date to HH:MM
+   * Helper to format time from Date to HH:MM (in local timezone)
    */
   private static formatTime(date: Date): string {
-    const hours = date.getUTCHours().toString().padStart(2, '0');
-    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    // Use local time, not UTC
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   }
 
   /**
-   * Helper to parse HH:MM string to Date (today at that time)
+   * Helper to parse HH:MM string to Date (today at that time in local timezone)
    */
   private static parseTime(timeStr: string): Date {
     const [hours, minutes] = timeStr.split(':').map(Number);
     const date = new Date();
-    date.setUTCHours(hours, minutes, 0, 0);
+    // Use local time, not UTC
+    date.setHours(hours, minutes, 0, 0);
     return date;
   }
 }
