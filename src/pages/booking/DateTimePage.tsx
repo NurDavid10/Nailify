@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { getAvailableTimeSlots, getAvailableDates } from '@/db/api';
 import type { TimeSlot } from '@/types/index';
 import { format } from 'date-fns';
+import { PageBackground } from '@/components/common/PageBackground';
 
 export default function DateTimePage() {
   const { t } = useLanguage();
@@ -54,13 +55,7 @@ export default function DateTimePage() {
 
   return (
     <div className="relative min-h-screen py-8">
-      {/* Subtle background image */}
-      <img
-        src="/salon/gallery-11.jpg"
-        alt=""
-        className="fixed inset-0 w-full h-full object-cover opacity-[0.25] pointer-events-none"
-      />
-      <div className="fixed inset-0 bg-background/40 pointer-events-none" />
+      <PageBackground pageKey="booking-datetime" opacity={0.25} overlayOpacity={0.4} />
 
       <div className="relative z-10 container mx-auto px-4 max-w-4xl">
         <div className="mb-6">

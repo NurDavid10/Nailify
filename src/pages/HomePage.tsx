@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Calendar, Sparkles, Clock, Award } from 'lucide-react';
+import { PageBackground } from '@/components/common/PageBackground';
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -11,12 +12,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-        <img
-          src="/salon/IMG_8395.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-white/65 backdrop-blur-[1px]" />
+        <PageBackground pageKey="home" opacity={1} overlayOpacity={0.65} className="backdrop-blur-[1px]" />
 
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 text-center space-y-8 max-w-3xl">
           <div className="space-y-4">

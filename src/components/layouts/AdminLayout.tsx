@@ -13,8 +13,10 @@ import {
   Settings,
   Menu,
   LogOut,
+  Image,
 } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { PageBackground } from '@/components/common/PageBackground';
 
 const navigation = [
   { name: 'admin.dashboard', href: '/admin', icon: LayoutDashboard },
@@ -22,6 +24,7 @@ const navigation = [
   { name: 'admin.availability', href: '/admin/availability', icon: Clock },
   { name: 'admin.appointments', href: '/admin/appointments', icon: Calendar },
   { name: 'admin.createAppointment', href: '/admin/create-appointment', icon: CalendarPlus },
+  { name: 'admin.backgrounds', href: '/admin/backgrounds', icon: Image },
   { name: 'admin.settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -108,12 +111,7 @@ export default function AdminLayout() {
 
           {/* Page Content */}
           <main className="flex-1 overflow-y-auto p-6 relative">
-            <img
-              src="/salon/gallery-5.jpg"
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none"
-            />
-            <div className="absolute inset-0 bg-background/50 pointer-events-none" />
+            <PageBackground pageKey="admin-layout" opacity={0.15} overlayOpacity={0.5} />
             <div className="relative z-10">
               <Outlet />
             </div>

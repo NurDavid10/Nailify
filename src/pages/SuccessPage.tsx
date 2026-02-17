@@ -3,19 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Home, Calendar } from 'lucide-react';
+import { PageBackground } from '@/components/common/PageBackground';
 
 export default function SuccessPage() {
   const { t } = useLanguage();
 
   return (
     <div className="min-h-screen relative flex items-center justify-center px-4 bg-background">
-      {/* Subtle background image */}
-      <img
-        src="/salon/IMG_8394.jpg"
-        alt=""
-        loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover opacity-10"
-      />
+      <PageBackground pageKey="success" opacity={0.1} overlayOpacity={0} />
 
       <Card className="relative z-10 max-w-md w-full shadow-lg border-border/50">
         <CardContent className="pt-12 pb-8 text-center space-y-6">

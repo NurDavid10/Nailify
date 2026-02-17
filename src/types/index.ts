@@ -72,3 +72,13 @@ export interface BookingFormData {
   notes: string;
 }
 
+export interface PageBackground {
+  pageKey: string;
+  name_en: string;
+  name_ar: string;
+  name_he: string;
+  path: string;
+  currentBackgroundUrl: string | null;
+  defaultBackgroundUrl: string;
+}
+

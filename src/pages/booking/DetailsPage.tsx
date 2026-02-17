@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { PageBackground } from '@/components/common/PageBackground';
 
 const formSchema = z.object({
   customerName: z.string().min(2, 'Name is required'),
@@ -76,12 +77,7 @@ export default function DetailsPage() {
 
   return (
     <div className="relative min-h-screen py-8">
-      {/* Subtle background image */}
-      <img
-        src="/salon/gallery-20.jpg"
-        alt=""
-        className="fixed inset-0 w-full h-full object-cover opacity-[0.25] pointer-events-none"
-      />
+      <PageBackground pageKey="booking-details" opacity={0.25} overlayOpacity={0.4} />
       <div className="fixed inset-0 bg-background/40 pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 max-w-2xl">

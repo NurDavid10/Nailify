@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -12,11 +13,15 @@ import availabilityRoutes from './routes/availability.routes';
 import appointmentsRoutes from './routes/appointments.routes';
 import settingsRoutes from './routes/settings.routes';
 import adminSetupRoutes from './routes/admin-setup.routes';
+import backgroundsRoutes from './routes/backgrounds.routes';
 
 const app = express();
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false, // Disable CSP for uploaded images to work
+}));
 app.use(
   cors({
     origin: config.corsOrigin,
@@ -25,6 +30,9 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public/uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Logging
 if (config.nodeEnv === 'development') {
@@ -45,6 +53,7 @@ app.use('/api/availability', availabilityRoutes);
 app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminSetupRoutes);
+app.use('/api/backgrounds', backgroundsRoutes);
 
 // 404 handler
 app.use((req, res) => {

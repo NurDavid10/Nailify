@@ -98,6 +98,18 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.appointmentCreated': 'تم إنشاء الموعد بنجاح',
     'admin.selectTreatment': 'اختر العلاج',
     'admin.selectDateFirst': 'اختر التاريخ أولاً',
+    'admin.backgrounds': 'الخلفيات',
+
+    // Backgrounds
+    'backgrounds.title': 'إدارة خلفيات الصفحات',
+    'backgrounds.description': 'قم بتحميل وإدارة صور الخلفية لكل صفحة في الموقع',
+    'backgrounds.upload': 'رفع صورة',
+    'backgrounds.reset': 'إعادة تعيين',
+    'backgrounds.uploading': 'جاري الرفع...',
+    'backgrounds.current': 'الخلفية الحالية',
+    'backgrounds.custom': 'مخصص',
+    'backgrounds.maxSize': 'الحد الأقصى: 5 ميجابايت',
+    'backgrounds.confirmReset': 'هل أنت متأكد من إعادة تعيين الخلفية إلى الافتراضية؟',
 
     // Days of week
     'day.sunday': 'الأحد',
@@ -201,6 +213,18 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.appointmentCreated': 'התור נוצר בהצלחה',
     'admin.selectTreatment': 'בחר טיפול',
     'admin.selectDateFirst': 'בחר תאריך קודם',
+    'admin.backgrounds': 'רקעים',
+
+    // Backgrounds
+    'backgrounds.title': 'ניהול רקעי דפים',
+    'backgrounds.description': 'העלה ונהל תמונות רקע לכל דף באתר',
+    'backgrounds.upload': 'העלה תמונה',
+    'backgrounds.reset': 'אפס',
+    'backgrounds.uploading': 'מעלה...',
+    'backgrounds.current': 'רקע נוכחי',
+    'backgrounds.custom': 'מותאם אישית',
+    'backgrounds.maxSize': 'גודל מקסימלי: 5MB',
+    'backgrounds.confirmReset': 'האם אתה בטוח שברצונך לאפס את הרקע לברירת המחדל?',
 
     // Days of week
     'day.sunday': 'ראשון',
@@ -304,6 +328,18 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.appointmentCreated': 'Appointment created successfully',
     'admin.selectTreatment': 'Select a treatment',
     'admin.selectDateFirst': 'Select a date first',
+    'admin.backgrounds': 'Backgrounds',
+
+    // Backgrounds
+    'backgrounds.title': 'Manage Page Backgrounds',
+    'backgrounds.description': 'Upload and manage background images for each page on the site',
+    'backgrounds.upload': 'Upload Image',
+    'backgrounds.reset': 'Reset to Default',
+    'backgrounds.uploading': 'Uploading...',
+    'backgrounds.current': 'Current Background',
+    'backgrounds.custom': 'Custom',
+    'backgrounds.maxSize': 'Max size: 5MB',
+    'backgrounds.confirmReset': 'Are you sure you want to reset the background to default?',
 
     // Days of week
     'day.sunday': 'Sunday',
