@@ -195,18 +195,21 @@ export class AvailabilityService {
         const isAvailable = !appointments.some((apt) => {
           const aptStart = apt.startDatetime;
           const aptEnd = apt.endDatetime;
-          const overlaps = (
-            (slotStart >= aptStart && slotStart < aptEnd) ||
-            (slotEnd > aptStart && slotEnd <= aptEnd) ||
-            (slotStart <= aptStart && slotEnd >= aptEnd)
-          );
+
+          const condition1 = slotStart >= aptStart && slotStart < aptEnd;
+          const condition2 = slotEnd > aptStart && slotEnd <= aptEnd;
+          const condition3 = slotStart <= aptStart && slotEnd >= aptEnd;
+          const overlaps = condition1 || condition2 || condition3;
 
           if (overlaps) {
-            console.log('[getAvailableTimeSlots] Slot overlaps with appointment:', {
-              slotStart: slotStart.toISOString(),
-              slotEnd: slotEnd.toISOString(),
-              aptStart: aptStart.toISOString(),
-              aptEnd: aptEnd.toISOString(),
+            console.log('[getAvailableTimeSlots] ⚠️  Slot BLOCKED by appointment:', {
+              slot: `${slotStart.toISOString()} - ${slotEnd.toISOString()}`,
+              appointment: `${aptStart.toISOString()} - ${aptEnd.toISOString()}`,
+              slotDuration: `${(slotEnd.getTime() - slotStart.getTime()) / 60000} min`,
+              appointmentDuration: `${(aptEnd.getTime() - aptStart.getTime()) / 60000} min`,
+              condition1_slotStartsDuringApt: condition1,
+              condition2_slotEndsDuringApt: condition2,
+              condition3_slotContainsApt: condition3,
             });
           }
 

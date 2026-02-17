@@ -7,33 +7,17 @@ import { useEffect, useState } from 'react';
 import { getPageBackground, getGalleryImages } from '@/db/api';
 import type { GalleryImage } from '@/types/index';
 
-const defaultGalleryImages = [
-  '/salon/gallery-1.jpg',
-  '/salon/gallery-13.jpg',
-  '/salon/gallery-16.jpg',
-  '/salon/gallery-5.jpg',
-  '/salon/gallery-12.jpg',
-  '/salon/gallery-15.jpg',
-];
-
 export default function HomePage() {
   const { t } = useLanguage();
-  const [heroBackground, setHeroBackground] = useState('/salon/IMG_8395.jpg');
-  const [galleryImages, setGalleryImages] = useState<string[]>(defaultGalleryImages);
+  const [heroBackground, setHeroBackground] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
   useEffect(() => {
     // Load hero background
     getPageBackground('home')
       .then((url) => {
         if (url) {
-          // If it's an uploaded image, prepend the API base URL
-          if (url.startsWith('/uploads/')) {
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const baseUrl = API_BASE.replace('/api', '');
-            setHeroBackground(`${baseUrl}${url}`);
-          } else {
-            setHeroBackground(url);
-          }
+          setHeroBackground(url);
         }
       })
       .catch(console.error);
@@ -41,16 +25,7 @@ export default function HomePage() {
     // Load gallery images
     getGalleryImages()
       .then((images: GalleryImage[]) => {
-        const imageUrls = images.map((img) => {
-          const url = img.url;
-          // If it's an uploaded image, prepend the API base URL
-          if (url && url.startsWith('/uploads/')) {
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const baseUrl = API_BASE.replace('/api', '');
-            return `${baseUrl}${url}`;
-          }
-          return url;
-        });
+        const imageUrls = images.map((img) => img.url);
         setGalleryImages(imageUrls);
       })
       .catch(console.error);
@@ -60,12 +35,16 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-        <img
-          src={heroBackground}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-white/65 backdrop-blur-[1px]" />
+        {heroBackground && (
+          <>
+            <img
+              src={heroBackground}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-white/65 backdrop-blur-[1px]" />
+          </>
+        )}
 
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 text-center space-y-8 max-w-3xl">
           <div className="space-y-4">

@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import path from 'path';
-import fs from 'fs';
+import cloudinary from '../cloudinary';
 
 const prisma = new PrismaClient();
 
@@ -10,7 +9,6 @@ interface PageConfig {
   name_ar: string;
   name_he: string;
   path: string;
-  defaultBackgroundUrl: string;
 }
 
 const PAGE_CONFIGS: PageConfig[] = [
@@ -20,7 +18,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Home',
     name_ar: 'الرئيسية',
     name_he: 'בית',
-    defaultBackgroundUrl: '/salon/IMG_8395.jpg',
   },
   {
     pageKey: 'login',
@@ -28,7 +25,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Login',
     name_ar: 'تسجيل الدخول',
     name_he: 'התחברות',
-    defaultBackgroundUrl: '/salon/gallery-14.jpg',
   },
   {
     pageKey: 'booking-datetime',
@@ -36,7 +32,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Booking - Date & Time',
     name_ar: 'الحجز - التاريخ والوقت',
     name_he: 'הזמנה - תאריך ושעה',
-    defaultBackgroundUrl: '/salon/gallery-11.jpg',
   },
   {
     pageKey: 'booking-treatment',
@@ -44,7 +39,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Booking - Treatment',
     name_ar: 'الحجز - العلاج',
     name_he: 'הזמנה - טיפול',
-    defaultBackgroundUrl: '/salon/IMG_8393.jpg',
   },
   {
     pageKey: 'booking-details',
@@ -52,7 +46,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Booking - Details',
     name_ar: 'الحجز - التفاصيل',
     name_he: 'הזמנה - פרטים',
-    defaultBackgroundUrl: '/salon/gallery-20.jpg',
   },
   {
     pageKey: 'booking-confirm',
@@ -60,7 +53,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Booking - Confirm',
     name_ar: 'الحجز - تأكيد',
     name_he: 'הזמנה - אישור',
-    defaultBackgroundUrl: '/salon/gallery-17.jpg',
   },
   {
     pageKey: 'success',
@@ -68,7 +60,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Success',
     name_ar: 'النجاح',
     name_he: 'הצלחה',
-    defaultBackgroundUrl: '/salon/IMG_8394.jpg',
   },
   {
     pageKey: 'not-found',
@@ -76,7 +67,6 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Not Found',
     name_ar: 'غير موجود',
     name_he: 'לא נמצא',
-    defaultBackgroundUrl: '',
   },
   {
     pageKey: 'admin-layout',
@@ -84,20 +74,50 @@ const PAGE_CONFIGS: PageConfig[] = [
     name_en: 'Admin Pages',
     name_ar: 'صفحات الإدارة',
     name_he: 'דפי ניהול',
-    defaultBackgroundUrl: '/salon/gallery-5.jpg',
   },
 ];
 
-const DEFAULT_GALLERY_IMAGES = [
-  '/salon/gallery-1.jpg',
-  '/salon/gallery-13.jpg',
-  '/salon/gallery-16.jpg',
-  '/salon/gallery-5.jpg',
-  '/salon/gallery-12.jpg',
-  '/salon/gallery-15.jpg',
-];
-
 export class BackgroundsService {
+  /**
+   * Upload image to Cloudinary
+   */
+  private static async uploadToCloudinary(buffer: Buffer, folder: string, publicId?: string): Promise<{ url: string; publicId: string }> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: `nails-app/${folder}`,
+          public_id: publicId,
+          overwrite: true,
+          resource_type: 'image',
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else if (result) {
+            resolve({
+              url: result.secure_url,
+              publicId: result.public_id,
+            });
+          } else {
+            reject(new Error('Upload failed'));
+          }
+        }
+      );
+      uploadStream.end(buffer);
+    });
+  }
+
+  /**
+   * Delete image from Cloudinary
+   */
+  private static async deleteFromCloudinary(publicId: string): Promise<void> {
+    try {
+      await cloudinary.uploader.destroy(publicId);
+    } catch (error) {
+      console.error('Failed to delete from Cloudinary:', error);
+    }
+  }
+
   /**
    * Get all page backgrounds with metadata
    */
@@ -116,7 +136,7 @@ export class BackgroundsService {
           name_he: config.name_he,
           path: config.path,
           currentBackgroundUrl: setting?.value || null,
-          defaultBackgroundUrl: config.defaultBackgroundUrl,
+          defaultBackgroundUrl: null,
         };
       })
     );
@@ -133,32 +153,47 @@ export class BackgroundsService {
       where: { key: settingKey },
     });
 
-    const pageConfig = PAGE_CONFIGS.find((c) => c.pageKey === pageKey);
-
     return {
-      url: setting?.value || pageConfig?.defaultBackgroundUrl || null,
+      url: setting?.value || null,
     };
   }
 
   /**
-   * Update background URL for a page
+   * Upload and update background for a page
    */
-  static async updatePageBackground(pageKey: string, imageUrl: string) {
+  static async uploadPageBackground(pageKey: string, buffer: Buffer) {
     const settingKey = `bg_${pageKey}`;
+    const publicIdKey = `${settingKey}_publicId`;
 
-    const setting = await prisma.setting.upsert({
+    // Delete old image from Cloudinary if exists
+    const oldPublicIdSetting = await prisma.setting.findUnique({
+      where: { key: publicIdKey },
+    });
+    if (oldPublicIdSetting?.value) {
+      await BackgroundsService.deleteFromCloudinary(oldPublicIdSetting.value);
+    }
+
+    // Upload to Cloudinary
+    const { url, publicId } = await BackgroundsService.uploadToCloudinary(
+      buffer,
+      'backgrounds',
+      `page_${pageKey}`
+    );
+
+    // Save URL and public_id to database
+    await prisma.setting.upsert({
       where: { key: settingKey },
-      update: {
-        value: imageUrl,
-        updatedAt: new Date(),
-      },
-      create: {
-        key: settingKey,
-        value: imageUrl,
-      },
+      update: { value: url, updatedAt: new Date() },
+      create: { key: settingKey, value: url },
     });
 
-    return setting;
+    await prisma.setting.upsert({
+      where: { key: publicIdKey },
+      update: { value: publicId, updatedAt: new Date() },
+      create: { key: publicIdKey, value: publicId },
+    });
+
+    return url;
   }
 
   /**
@@ -166,29 +201,32 @@ export class BackgroundsService {
    */
   static async deletePageBackground(pageKey: string) {
     const settingKey = `bg_${pageKey}`;
+    const publicIdKey = `${settingKey}_publicId`;
 
-    // Delete the setting
-    await prisma.setting.deleteMany({
-      where: { key: settingKey },
+    // Get public_id and delete from Cloudinary
+    const publicIdSetting = await prisma.setting.findUnique({
+      where: { key: publicIdKey },
     });
-
-    // Delete the file if it exists
-    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
-    const files = fs.readdirSync(uploadsDir);
-    const fileToDelete = files.find((file) => file.startsWith(pageKey));
-
-    if (fileToDelete) {
-      const filePath = path.join(uploadsDir, fileToDelete);
-      fs.unlinkSync(filePath);
+    if (publicIdSetting?.value) {
+      await BackgroundsService.deleteFromCloudinary(publicIdSetting.value);
     }
+
+    // Delete settings from database
+    await prisma.setting.deleteMany({
+      where: {
+        key: {
+          in: [settingKey, publicIdKey],
+        },
+      },
+    });
   }
 
   /**
-   * Get all gallery images (both default and custom)
+   * Get all gallery images
    */
   static async getGalleryImages() {
-    // Get all gallery settings from database
-    const settings = await prisma.setting.findMany({
+    // Get all gallery settings from database (excluding publicId settings)
+    const allSettings = await prisma.setting.findMany({
       where: {
         key: {
           startsWith: 'gallery_',
@@ -199,16 +237,10 @@ export class BackgroundsService {
       },
     });
 
-    // If no custom images, return defaults
-    if (settings.length === 0) {
-      return DEFAULT_GALLERY_IMAGES.map((url, index) => ({
-        id: `default_${index}`,
-        url,
-        isDefault: true,
-      }));
-    }
+    // Filter out publicId settings
+    const settings = allSettings.filter((s) => !s.key.endsWith('_publicId'));
 
-    // Return custom images
+    // Return gallery images (empty array if none uploaded)
     return settings.map((setting) => ({
       id: setting.key.replace('gallery_', ''),
       url: setting.value,
@@ -219,44 +251,71 @@ export class BackgroundsService {
   /**
    * Add a new gallery image
    */
-  static async addGalleryImage(imageUrl: string) {
+  static async addGalleryImage(buffer: Buffer) {
     // Generate unique ID using timestamp
     const imageId = Date.now().toString();
     const settingKey = `gallery_${imageId}`;
+    const publicIdKey = `${settingKey}_publicId`;
 
-    const setting = await prisma.setting.create({
-      data: {
-        key: settingKey,
-        value: imageUrl,
-      },
+    // Upload to Cloudinary
+    const { url, publicId } = await BackgroundsService.uploadToCloudinary(
+      buffer,
+      'gallery',
+      `gallery_${imageId}`
+    );
+
+    // Save URL and public_id to database
+    await prisma.setting.create({
+      data: { key: settingKey, value: url },
+    });
+
+    await prisma.setting.create({
+      data: { key: publicIdKey, value: publicId },
     });
 
     return {
       id: imageId,
-      url: setting.value,
+      url,
       isDefault: false,
     };
   }
 
   /**
-   * Update a gallery image
+   * Upload and update a gallery image
    */
-  static async updateGalleryImage(imageId: string, imageUrl: string) {
+  static async uploadGalleryImage(imageId: string, buffer: Buffer) {
     const settingKey = `gallery_${imageId}`;
+    const publicIdKey = `${settingKey}_publicId`;
 
-    const setting = await prisma.setting.upsert({
+    // Delete old image from Cloudinary if exists
+    const oldPublicIdSetting = await prisma.setting.findUnique({
+      where: { key: publicIdKey },
+    });
+    if (oldPublicIdSetting?.value) {
+      await BackgroundsService.deleteFromCloudinary(oldPublicIdSetting.value);
+    }
+
+    // Upload to Cloudinary
+    const { url, publicId } = await BackgroundsService.uploadToCloudinary(
+      buffer,
+      'gallery',
+      `gallery_${imageId}`
+    );
+
+    // Save URL and public_id to database
+    await prisma.setting.upsert({
       where: { key: settingKey },
-      update: {
-        value: imageUrl,
-        updatedAt: new Date(),
-      },
-      create: {
-        key: settingKey,
-        value: imageUrl,
-      },
+      update: { value: url, updatedAt: new Date() },
+      create: { key: settingKey, value: url },
     });
 
-    return setting;
+    await prisma.setting.upsert({
+      where: { key: publicIdKey },
+      update: { value: publicId, updatedAt: new Date() },
+      create: { key: publicIdKey, value: publicId },
+    });
+
+    return url;
   }
 
   /**
@@ -264,20 +323,23 @@ export class BackgroundsService {
    */
   static async deleteGalleryImage(imageId: string) {
     const settingKey = `gallery_${imageId}`;
+    const publicIdKey = `${settingKey}_publicId`;
 
-    // Delete the setting
-    await prisma.setting.deleteMany({
-      where: { key: settingKey },
+    // Get public_id and delete from Cloudinary
+    const publicIdSetting = await prisma.setting.findUnique({
+      where: { key: publicIdKey },
     });
-
-    // Delete the file if it exists
-    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
-    const files = fs.readdirSync(uploadsDir);
-    const fileToDelete = files.find((file) => file.includes(`gallery_${imageId}`));
-
-    if (fileToDelete) {
-      const filePath = path.join(uploadsDir, fileToDelete);
-      fs.unlinkSync(filePath);
+    if (publicIdSetting?.value) {
+      await BackgroundsService.deleteFromCloudinary(publicIdSetting.value);
     }
+
+    // Delete settings from database
+    await prisma.setting.deleteMany({
+      where: {
+        key: {
+          in: [settingKey, publicIdKey],
+        },
+      },
+    });
   }
 }

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import type { Treatment } from '@/types/index';
 import { PageBackground } from '@/components/common/PageBackground';
+import { getLocalizedField } from '@/lib/utils';
 
 export default function ConfirmPage() {
   const { t, language } = useLanguage();
@@ -43,16 +44,7 @@ export default function ConfirmPage() {
     }
   }, [navigate]);
 
-  const getTreatmentName = (treatment: Treatment) => {
-    switch (language) {
-      case 'ar':
-        return treatment.name_ar;
-      case 'he':
-        return treatment.name_he;
-      default:
-        return treatment.name_en;
-    }
-  };
+  // Removed: Duplicated localization logic - now using getLocalizedField utility
 
   const handleConfirm = async () => {
     if (!bookingData) return;
@@ -169,7 +161,7 @@ export default function ConfirmPage() {
                   <FileText className="h-5 w-5 text-primary mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">{t('booking.treatment')}</p>
-                    <p className="font-medium">{getTreatmentName(bookingData.selectedTreatment)}</p>
+                    <p className="font-medium">{getLocalizedField(bookingData.selectedTreatment, 'name', language)}</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {t('booking.duration')}: {bookingData.selectedTreatment.duration_minutes}{' '}
                       {t('booking.minutes')}

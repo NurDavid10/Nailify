@@ -1,24 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
-// Ensure upload directory exists
-const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const pageKey = req.params.pageKey || 'unknown';
-    const ext = path.extname(file.originalname);
-    cb(null, `${pageKey}${ext}`);
-  },
-});
+// Use memory storage for Cloudinary uploads
+const storage = multer.memoryStorage();
 
 // File filter - only allow images
 const fileFilter = (req: any, file: any, cb: any) => {

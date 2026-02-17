@@ -4,8 +4,6 @@ import { authenticateToken } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { asyncHandler } from '../middleware/errorHandler';
 import { uploadBackground } from '../middleware/upload';
-import path from 'path';
-import fs from 'fs';
 
 const router = Router();
 
@@ -46,13 +44,12 @@ router.post(
     const pageKey = req.params.pageKey;
     const file = req.file;
 
-    if (!file) {
+    if (!file || !file.buffer) {
       res.status(400).json({ message: 'No file uploaded' });
       return;
     }
 
-    const imageUrl = `/uploads/backgrounds/${file.filename}`;
-    await BackgroundsService.updatePageBackground(pageKey, imageUrl);
+    const imageUrl = await BackgroundsService.uploadPageBackground(pageKey, file.buffer);
 
     res.json({ url: imageUrl });
   })
@@ -96,24 +93,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const file = req.file;
 
-    if (!file) {
+    if (!file || !file.buffer) {
       res.status(400).json({ message: 'No file uploaded' });
       return;
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
-    const ext = path.extname(file.filename);
-    const newFilename = `gallery_${timestamp}${ext}`;
-    const oldPath = path.join(uploadsDir, file.filename);
-    const newPath = path.join(uploadsDir, newFilename);
-
-    // Rename file
-    fs.renameSync(oldPath, newPath);
-
-    const imageUrl = `/uploads/backgrounds/${newFilename}`;
-    const image = await BackgroundsService.addGalleryImage(imageUrl);
+    const image = await BackgroundsService.addGalleryImage(file.buffer);
 
     res.json(image);
   })
@@ -132,23 +117,12 @@ router.post(
     const imageId = req.params.imageId;
     const file = req.file;
 
-    if (!file) {
+    if (!file || !file.buffer) {
       res.status(400).json({ message: 'No file uploaded' });
       return;
     }
 
-    // Update filename to include gallery ID
-    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
-    const ext = path.extname(file.filename);
-    const newFilename = `gallery_${imageId}${ext}`;
-    const oldPath = path.join(uploadsDir, file.filename);
-    const newPath = path.join(uploadsDir, newFilename);
-
-    // Rename file
-    fs.renameSync(oldPath, newPath);
-
-    const imageUrl = `/uploads/backgrounds/${newFilename}`;
-    await BackgroundsService.updateGalleryImage(imageId, imageUrl);
+    const imageUrl = await BackgroundsService.uploadGalleryImage(imageId, file.buffer);
 
     res.json({ url: imageUrl });
   })

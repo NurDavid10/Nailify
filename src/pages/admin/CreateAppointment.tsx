@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { getTreatments, getAvailableTimeSlots, getAvailableDates, createAppointment } from '@/db/api';
 import type { Treatment, TimeSlot } from '@/types/index';
+import { getLocalizedField } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,13 +92,7 @@ export default function CreateAppointment() {
 
   const availableSlots = timeSlots.filter((slot) => slot.available);
 
-  const getTreatmentName = (treatment: Treatment) => {
-    switch (language) {
-      case 'ar': return treatment.name_ar;
-      case 'he': return treatment.name_he;
-      default: return treatment.name_en;
-    }
-  };
+  // Removed: Duplicated localization logic - now using getLocalizedField utility
 
   const selectedTreatment = treatments.find((t) => t.id === selectedTreatmentId);
 
@@ -201,7 +196,7 @@ export default function CreateAppointment() {
                       <SelectContent>
                         {treatments.map((treatment) => (
                           <SelectItem key={treatment.id} value={treatment.id}>
-                            {getTreatmentName(treatment)} — {treatment.duration_minutes}{t('booking.minutes')} — ₪{treatment.price}
+                            {getLocalizedField(treatment, 'name', language)} — {treatment.duration_minutes}{t('booking.minutes')} — ₪{treatment.price}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -289,7 +284,7 @@ export default function CreateAppointment() {
 
               {selectedTreatment && selectedDate && form.watch('time') && (
                 <div className="rounded-lg border p-4 space-y-1 text-sm">
-                  <p><span className="font-medium">{t('booking.treatment')}:</span> {getTreatmentName(selectedTreatment)}</p>
+                  <p><span className="font-medium">{t('booking.treatment')}:</span> {getLocalizedField(selectedTreatment, 'name', language)}</p>
                   <p><span className="font-medium">{t('booking.duration')}:</span> {selectedTreatment.duration_minutes} {t('booking.minutes')}</p>
                   <p><span className="font-medium">{t('booking.price')}:</span> ₪{selectedTreatment.price}</p>
                 </div>

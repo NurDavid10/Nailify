@@ -15,6 +15,7 @@ import {
   addGalleryImage,
 } from '@/db/api';
 import type { PageBackground, GalleryImage } from '@/types/index';
+import { getLocalizedField } from '@/lib/utils';
 
 export default function AppearanceManagement() {
   const { t, language } = useLanguage();
@@ -185,32 +186,14 @@ export default function AppearanceManagement() {
     }
   };
 
-  const getPageName = (bg: PageBackground) => {
-    switch (language) {
-      case 'ar':
-        return bg.name_ar;
-      case 'he':
-        return bg.name_he;
-      default:
-        return bg.name_en;
-    }
-  };
-
-  const getImageUrl = (url: string) => {
-    if (url && url.startsWith('/uploads/')) {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = API_BASE.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
+  // Removed: Duplicated localization logic - now using getLocalizedField utility
 
   const getBackgroundUrl = (bg: PageBackground) => {
-    return getImageUrl(bg.currentBackgroundUrl || bg.defaultBackgroundUrl);
+    return bg.currentBackgroundUrl;
   };
 
   const getGalleryImageUrl = (img: GalleryImage) => {
-    return getImageUrl(img.url);
+    return img.url;
   };
 
   if (loading) {
@@ -244,7 +227,7 @@ export default function AppearanceManagement() {
             return (
               <Card key={bg.pageKey} className="overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="text-lg">{getPageName(bg)}</CardTitle>
+                  <CardTitle className="text-lg">{getLocalizedField(bg, 'name', language)}</CardTitle>
                   <p className="text-sm text-muted-foreground">{bg.path}</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -252,7 +235,7 @@ export default function AppearanceManagement() {
                     {backgroundUrl ? (
                       <img
                         src={backgroundUrl}
-                        alt={getPageName(bg)}
+                        alt={getLocalizedField(bg, 'name', language)}
                         className="w-full h-full object-cover"
                       />
                     ) : (

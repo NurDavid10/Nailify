@@ -56,13 +56,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      <PageBackground pageKey="login" opacity={1} overlay={false} />
+
       {/* Image panel — desktop only */}
       <div className="hidden md:flex md:w-1/3 relative overflow-hidden">
-        <img
-          src="/salon/gallery-14.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         <div className="relative z-10 flex items-end p-12">
           <div className="text-white">
@@ -74,11 +71,6 @@ export default function LoginPage() {
 
       {/* Mobile image banner */}
       <div className="md:hidden h-40 relative overflow-hidden">
-        <img
-          src="/salon/gallery-14.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
       </div>
 

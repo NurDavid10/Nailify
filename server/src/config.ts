@@ -13,6 +13,11 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : ['http://localhost:5173'],
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
+    apiKey: process.env.CLOUDINARY_API_KEY!,
+    apiSecret: process.env.CLOUDINARY_API_SECRET!,
+  },
 };
 
 // Validate required env vars
@@ -22,4 +27,8 @@ if (!config.jwtSecret) {
 
 if (!config.databaseUrl) {
   throw new Error('DATABASE_URL environment variable is required');
+}
+
+if (!config.cloudinary.cloudName || !config.cloudinary.apiKey || !config.cloudinary.apiSecret) {
+  throw new Error('CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables are required');
 }

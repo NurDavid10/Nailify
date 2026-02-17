@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, Clock, DollarSign } from 'lucide-react';
 import { getTreatments } from '@/db/api';
 import type { Treatment } from '@/types/index';
 import { PageBackground } from '@/components/common/PageBackground';
+import { getLocalizedField } from '@/lib/utils';
 
 export default function TreatmentPage() {
   const { t, language } = useLanguage();
@@ -57,16 +58,7 @@ export default function TreatmentPage() {
     }
   };
 
-  const getTreatmentName = (treatment: Treatment) => {
-    switch (language) {
-      case 'ar':
-        return treatment.name_ar;
-      case 'he':
-        return treatment.name_he;
-      default:
-        return treatment.name_en;
-    }
-  };
+  // Removed: Duplicated localization logic - now using getLocalizedField utility
 
   return (
     <div className="relative min-h-screen py-8">
@@ -106,7 +98,7 @@ export default function TreatmentPage() {
                         <div className="flex justify-between items-start">
                           <div className="space-y-2 flex-1">
                             <h3 className="font-semibold text-lg">
-                              {getTreatmentName(treatment)}
+                              {getLocalizedField(treatment, 'name', language)}
                             </h3>
                             <div className="flex flex-wrap gap-3 text-sm">
                               <div className="flex items-center gap-1 text-muted-foreground">
@@ -136,7 +128,7 @@ export default function TreatmentPage() {
                       <h3 className="font-semibold mb-3">{t('booking.selectedTreatment')}</h3>
                       <div className="space-y-2">
                         <p className="text-lg font-semibold">
-                          {getTreatmentName(selectedTreatment)}
+                          {getLocalizedField(selectedTreatment, 'name', language)}
                         </p>
                         <div className="flex items-center gap-1 text-2xl font-bold text-primary">
                           <DollarSign className="h-6 w-6" />

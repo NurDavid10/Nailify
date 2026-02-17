@@ -16,6 +16,7 @@ import { getAppointments, cancelAppointment } from '@/db/api';
 import type { Appointment } from '@/types/index';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { getLocalizedField } from '@/lib/utils';
 
 export default function AppointmentsManagement() {
   const { t, language } = useLanguage();
@@ -58,17 +59,7 @@ export default function AppointmentsManagement() {
     }
   };
 
-  const getTreatmentName = (appointment: Appointment) => {
-    if (!appointment.treatments) return '';
-    switch (language) {
-      case 'ar':
-        return appointment.treatments.name_ar;
-      case 'he':
-        return appointment.treatments.name_he;
-      default:
-        return appointment.treatments.name_en;
-    }
-  };
+  // Removed: Duplicated localization logic - now using getLocalizedField utility
 
   return (
     <div className="space-y-6">
@@ -111,7 +102,7 @@ export default function AppointmentsManagement() {
                         <TableCell>{format(startDate, 'HH:mm')}</TableCell>
                         <TableCell className="font-medium">{appointment.customer_name}</TableCell>
                         <TableCell>{appointment.phone}</TableCell>
-                        <TableCell>{getTreatmentName(appointment)}</TableCell>
+                        <TableCell>{getLocalizedField(appointment.treatments, 'name', language)}</TableCell>
                         <TableCell>₪{appointment.price_at_booking.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={appointment.status === 'booked' ? 'default' : 'secondary'}>

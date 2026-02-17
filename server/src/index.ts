@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import path from 'path';
 import cron from 'node-cron';
 import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
@@ -23,7 +22,6 @@ const app = express();
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false, // Disable CSP for uploaded images to work
 }));
 app.use(
   cors({
@@ -33,9 +31,6 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve static files from public/uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Logging
 if (config.nodeEnv === 'development') {
