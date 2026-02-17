@@ -48,6 +48,7 @@ export default function CreateAppointment() {
 
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
@@ -76,10 +77,12 @@ export default function CreateAppointment() {
   useEffect(() => {
     if (!selectedDate) {
       setTimeSlots([]);
+      setSelectedSlot(null);
       return;
     }
     setLoadingSlots(true);
     form.setValue('time', '');
+    setSelectedSlot(null);
     getAvailableTimeSlots(selectedDate)
       .then(setTimeSlots)
       .catch(console.error)
@@ -100,14 +103,11 @@ export default function CreateAppointment() {
 
   const onSubmit = async (data: FormData) => {
     const treatment = treatments.find((t) => t.id === data.treatment_id);
-    if (!treatment) return;
+    if (!treatment || !selectedSlot) return;
 
-    const startDateTime = new Date(data.date);
-    const [hours, minutes] = data.time.split(':').map(Number);
-    startDateTime.setUTCHours(hours, minutes, 0, 0);
-
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setUTCMinutes(endDateTime.getUTCMinutes() + treatment.duration_minutes);
+    // Use the actual slot timestamps to ensure timezone consistency
+    const startDateTime = selectedSlot.start;
+    const endDateTime = selectedSlot.end;
 
     setSubmitting(true);
     try {
@@ -244,7 +244,12 @@ export default function CreateAppointment() {
                   <FormItem>
                     <FormLabel>{t('booking.time')}</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(timeStr) => {
+                        field.onChange(timeStr);
+                        // Find and store the matching slot
+                        const slot = availableSlots.find((s) => format(s.start, 'HH:mm') === timeStr);
+                        setSelectedSlot(slot || null);
+                      }}
                       value={field.value}
                       disabled={!selectedDate || loadingSlots}
                     >
