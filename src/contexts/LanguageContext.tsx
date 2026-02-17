@@ -98,18 +98,23 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.appointmentCreated': 'تم إنشاء الموعد بنجاح',
     'admin.selectTreatment': 'اختر العلاج',
     'admin.selectDateFirst': 'اختر التاريخ أولاً',
-    'admin.backgrounds': 'الخلفيات',
+    'admin.backgrounds': 'المظهر',
 
-    // Backgrounds
-    'backgrounds.title': 'إدارة خلفيات الصفحات',
-    'backgrounds.description': 'قم بتحميل وإدارة صور الخلفية لكل صفحة في الموقع',
+    // Backgrounds & Gallery
+    'appearance.title': 'إدارة المظهر',
+    'appearance.description': 'إدارة خلفيات الصفحات وصور المعرض',
+    'appearance.pageBackgrounds': 'خلفيات الصفحات',
+    'appearance.pageBackgroundsDesc': 'قم بتحميل وإدارة صور الخلفية لكل صفحة',
+    'appearance.homeGallery': 'معرض الصفحة الرئيسية',
+    'appearance.homeGalleryDesc': 'قم بتحميل وإدارة الصور المعروضة في الصفحة الرئيسية',
     'backgrounds.upload': 'رفع صورة',
     'backgrounds.reset': 'إعادة تعيين',
     'backgrounds.uploading': 'جاري الرفع...',
     'backgrounds.current': 'الخلفية الحالية',
     'backgrounds.custom': 'مخصص',
     'backgrounds.maxSize': 'الحد الأقصى: 5 ميجابايت',
-    'backgrounds.confirmReset': 'هل أنت متأكد من إعادة تعيين الخلفية إلى الافتراضية؟',
+    'backgrounds.confirmReset': 'هل أنت متأكد من إعادة تعيين إلى الافتراضي؟',
+    'gallery.image': 'صورة',
 
     // Days of week
     'day.sunday': 'الأحد',
@@ -213,18 +218,23 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.appointmentCreated': 'התור נוצר בהצלחה',
     'admin.selectTreatment': 'בחר טיפול',
     'admin.selectDateFirst': 'בחר תאריך קודם',
-    'admin.backgrounds': 'רקעים',
+    'admin.backgrounds': 'מראה',
 
-    // Backgrounds
-    'backgrounds.title': 'ניהול רקעי דפים',
-    'backgrounds.description': 'העלה ונהל תמונות רקע לכל דף באתר',
+    // Backgrounds & Gallery
+    'appearance.title': 'ניהול מראה',
+    'appearance.description': 'נהל רקעי דפים ותמונות גלריה',
+    'appearance.pageBackgrounds': 'רקעי דפים',
+    'appearance.pageBackgroundsDesc': 'העלה ונהל תמונות רקע לכל דף',
+    'appearance.homeGallery': 'גלריית דף הבית',
+    'appearance.homeGalleryDesc': 'העלה ונהל תמונות המוצגות בדף הבית',
     'backgrounds.upload': 'העלה תמונה',
     'backgrounds.reset': 'אפס',
     'backgrounds.uploading': 'מעלה...',
     'backgrounds.current': 'רקע נוכחי',
     'backgrounds.custom': 'מותאם אישית',
     'backgrounds.maxSize': 'גודל מקסימלי: 5MB',
-    'backgrounds.confirmReset': 'האם אתה בטוח שברצונך לאפס את הרקע לברירת המחדל?',
+    'backgrounds.confirmReset': 'האם אתה בטוח שברצונך לאפס לברירת מחדל?',
+    'gallery.image': 'תמונה',
 
     // Days of week
     'day.sunday': 'ראשון',
@@ -328,18 +338,23 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.appointmentCreated': 'Appointment created successfully',
     'admin.selectTreatment': 'Select a treatment',
     'admin.selectDateFirst': 'Select a date first',
-    'admin.backgrounds': 'Backgrounds',
+    'admin.backgrounds': 'Appearance',
 
-    // Backgrounds
-    'backgrounds.title': 'Manage Page Backgrounds',
-    'backgrounds.description': 'Upload and manage background images for each page on the site',
+    // Backgrounds & Gallery
+    'appearance.title': 'Manage Appearance',
+    'appearance.description': 'Manage page backgrounds and gallery images',
+    'appearance.pageBackgrounds': 'Page Backgrounds',
+    'appearance.pageBackgroundsDesc': 'Upload and manage background images for each page',
+    'appearance.homeGallery': 'Home Page Gallery',
+    'appearance.homeGalleryDesc': 'Upload and manage images displayed on the home page',
     'backgrounds.upload': 'Upload Image',
     'backgrounds.reset': 'Reset to Default',
     'backgrounds.uploading': 'Uploading...',
     'backgrounds.current': 'Current Background',
     'backgrounds.custom': 'Custom',
     'backgrounds.maxSize': 'Max size: 5MB',
-    'backgrounds.confirmReset': 'Are you sure you want to reset the background to default?',
+    'backgrounds.confirmReset': 'Are you sure you want to reset to default?',
+    'gallery.image': 'Image',
 
     // Days of week
     'day.sunday': 'Sunday',

@@ -88,6 +88,15 @@ const PAGE_CONFIGS: PageConfig[] = [
   },
 ];
 
+const GALLERY_IMAGES = [
+  { id: 1, defaultUrl: '/salon/gallery-1.jpg' },
+  { id: 2, defaultUrl: '/salon/gallery-13.jpg' },
+  { id: 3, defaultUrl: '/salon/gallery-16.jpg' },
+  { id: 4, defaultUrl: '/salon/gallery-5.jpg' },
+  { id: 5, defaultUrl: '/salon/gallery-12.jpg' },
+  { id: 6, defaultUrl: '/salon/gallery-15.jpg' },
+];
+
 export class BackgroundsService {
   /**
    * Get all page backgrounds with metadata
@@ -167,6 +176,71 @@ export class BackgroundsService {
     const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
     const files = fs.readdirSync(uploadsDir);
     const fileToDelete = files.find((file) => file.startsWith(pageKey));
+
+    if (fileToDelete) {
+      const filePath = path.join(uploadsDir, fileToDelete);
+      fs.unlinkSync(filePath);
+    }
+  }
+
+  /**
+   * Get all gallery images
+   */
+  static async getGalleryImages() {
+    const images = await Promise.all(
+      GALLERY_IMAGES.map(async (img) => {
+        const settingKey = `gallery_${img.id}`;
+        const setting = await prisma.setting.findUnique({
+          where: { key: settingKey },
+        });
+
+        return {
+          id: img.id,
+          currentUrl: setting?.value || null,
+          defaultUrl: img.defaultUrl,
+        };
+      })
+    );
+
+    return images;
+  }
+
+  /**
+   * Update a gallery image
+   */
+  static async updateGalleryImage(imageId: number, imageUrl: string) {
+    const settingKey = `gallery_${imageId}`;
+
+    const setting = await prisma.setting.upsert({
+      where: { key: settingKey },
+      update: {
+        value: imageUrl,
+        updatedAt: new Date(),
+      },
+      create: {
+        key: settingKey,
+        value: imageUrl,
+      },
+    });
+
+    return setting;
+  }
+
+  /**
+   * Delete a gallery image (revert to default)
+   */
+  static async deleteGalleryImage(imageId: number) {
+    const settingKey = `gallery_${imageId}`;
+
+    // Delete the setting
+    await prisma.setting.deleteMany({
+      where: { key: settingKey },
+    });
+
+    // Delete the file if it exists
+    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
+    const files = fs.readdirSync(uploadsDir);
+    const fileToDelete = files.find((file) => file.startsWith(`gallery_${imageId}`));
 
     if (fileToDelete) {
       const filePath = path.join(uploadsDir, fileToDelete);

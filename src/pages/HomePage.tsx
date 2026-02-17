@@ -3,16 +3,69 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Calendar, Sparkles, Clock, Award } from 'lucide-react';
-import { PageBackground } from '@/components/common/PageBackground';
+import { useEffect, useState } from 'react';
+import { getPageBackground, getGalleryImages } from '@/db/api';
+import type { GalleryImage } from '@/types/index';
+
+const defaultGalleryImages = [
+  '/salon/gallery-1.jpg',
+  '/salon/gallery-13.jpg',
+  '/salon/gallery-16.jpg',
+  '/salon/gallery-5.jpg',
+  '/salon/gallery-12.jpg',
+  '/salon/gallery-15.jpg',
+];
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const [heroBackground, setHeroBackground] = useState('/salon/IMG_8395.jpg');
+  const [galleryImages, setGalleryImages] = useState<string[]>(defaultGalleryImages);
+
+  useEffect(() => {
+    // Load hero background
+    getPageBackground('home')
+      .then((url) => {
+        if (url) {
+          // If it's an uploaded image, prepend the API base URL
+          if (url.startsWith('/uploads/')) {
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const baseUrl = API_BASE.replace('/api', '');
+            setHeroBackground(`${baseUrl}${url}`);
+          } else {
+            setHeroBackground(url);
+          }
+        }
+      })
+      .catch(console.error);
+
+    // Load gallery images
+    getGalleryImages()
+      .then((images: GalleryImage[]) => {
+        const imageUrls = images.map((img) => {
+          const url = img.currentUrl || img.defaultUrl;
+          // If it's an uploaded image, prepend the API base URL
+          if (url && url.startsWith('/uploads/')) {
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const baseUrl = API_BASE.replace('/api', '');
+            return `${baseUrl}${url}`;
+          }
+          return url;
+        });
+        setGalleryImages(imageUrls);
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-        <PageBackground pageKey="home" opacity={1} overlayOpacity={0.65} className="backdrop-blur-[1px]" />
+        <img
+          src={heroBackground}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-white/65 backdrop-blur-[1px]" />
 
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 text-center space-y-8 max-w-3xl">
           <div className="space-y-4">
@@ -49,54 +102,16 @@ export default function HomePage() {
             {t('home.title')}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
-              <img
-                src="/salon/gallery-1.jpg"
-                alt="Nail art design"
-                loading="lazy"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
-              <img
-                src="/salon/gallery-13.jpg"
-                alt="Nail art design"
-                loading="lazy"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
-              <img
-                src="/salon/gallery-16.jpg"
-                alt="Nail art design"
-                loading="lazy"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
-              <img
-                src="/salon/gallery-5.jpg"
-                alt="Nail art design"
-                loading="lazy"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
-              <img
-                src="/salon/gallery-12.jpg"
-                alt="Nail art design"
-                loading="lazy"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
-              <img
-                src="/salon/gallery-15.jpg"
-                alt="Nail art design"
-                loading="lazy"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
+            {galleryImages.map((imageUrl, index) => (
+              <div key={index} className="aspect-square rounded-2xl overflow-hidden shadow-md">
+                <img
+                  src={imageUrl}
+                  alt="Nail art design"
+                  loading="lazy"
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -4,6 +4,8 @@ import { authenticateToken } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { asyncHandler } from '../middleware/errorHandler';
 import { uploadBackground } from '../middleware/upload';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 
@@ -67,6 +69,68 @@ router.delete(
   asyncHandler(async (req, res) => {
     await BackgroundsService.deletePageBackground(req.params.pageKey);
     res.json({ message: 'Background reset to default' });
+  })
+);
+
+/**
+ * GET /api/backgrounds/gallery/images
+ * Get all gallery images
+ */
+router.get(
+  '/gallery/images',
+  asyncHandler(async (req, res) => {
+    const images = await BackgroundsService.getGalleryImages();
+    res.json(images);
+  })
+);
+
+/**
+ * POST /api/backgrounds/gallery/:imageId/upload
+ * Upload a gallery image (admin only)
+ */
+router.post(
+  '/gallery/:imageId/upload',
+  authenticateToken,
+  requireAdmin,
+  uploadBackground.single('image'),
+  asyncHandler(async (req, res) => {
+    const imageId = parseInt(req.params.imageId, 10);
+    const file = req.file;
+
+    if (!file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    // Update filename to include gallery ID
+    const uploadsDir = path.join(__dirname, '../../public/uploads/backgrounds');
+    const ext = path.extname(file.filename);
+    const newFilename = `gallery_${imageId}${ext}`;
+    const oldPath = path.join(uploadsDir, file.filename);
+    const newPath = path.join(uploadsDir, newFilename);
+
+    // Rename file
+    fs.renameSync(oldPath, newPath);
+
+    const imageUrl = `/uploads/backgrounds/${newFilename}`;
+    await BackgroundsService.updateGalleryImage(imageId, imageUrl);
+
+    res.json({ url: imageUrl });
+  })
+);
+
+/**
+ * DELETE /api/backgrounds/gallery/:imageId
+ * Delete custom gallery image (revert to default) - admin only
+ */
+router.delete(
+  '/gallery/:imageId',
+  authenticateToken,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const imageId = parseInt(req.params.imageId, 10);
+    await BackgroundsService.deleteGalleryImage(imageId);
+    res.json({ message: 'Gallery image reset to default' });
   })
 );
 

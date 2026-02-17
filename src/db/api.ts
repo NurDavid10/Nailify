@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Treatment, AvailabilityRule, TimeSlot, Appointment, Setting, PageBackground } from '@/types/index';
+import type { Treatment, AvailabilityRule, TimeSlot, Appointment, Setting, PageBackground, GalleryImage } from '@/types/index';
 
 // Treatments
 export async function getTreatments(activeOnly = true): Promise<Treatment[]> {
@@ -217,4 +217,35 @@ export async function uploadPageBackground(pageKey: string, file: File): Promise
 
 export async function deletePageBackground(pageKey: string): Promise<void> {
   await api.delete(`/backgrounds/${pageKey}`);
+}
+
+// Gallery Images
+export async function getGalleryImages(): Promise<GalleryImage[]> {
+  return api.get<GalleryImage[]>('/backgrounds/gallery/images');
+}
+
+export async function uploadGalleryImage(imageId: number, file: File): Promise<string> {
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`${API_BASE}/backgrounds/gallery/${imageId}/upload`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Upload failed');
+  }
+
+  const data = await response.json();
+  return data.url;
+}
+
+export async function deleteGalleryImage(imageId: number): Promise<void> {
+  await api.delete(`/backgrounds/gallery/${imageId}`);
 }
