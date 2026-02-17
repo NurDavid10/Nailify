@@ -6,7 +6,7 @@ This guide provides step-by-step instructions for deploying the Nails Booking Ap
 
 - **Frontend**: React + Vite → Deployed to **Vercel**
 - **Backend**: Node.js + Express + Prisma → Deployed to **Railway** (or Render)
-- **Database**: PostgreSQL → **Supabase** (or Railway PostgreSQL)
+- **Database**: PostgreSQL (Docker locally, Railway/managed PostgreSQL in production)
 
 ---
 
@@ -17,51 +17,47 @@ Before starting, ensure you have:
 - [ ] GitHub account (for repository hosting)
 - [ ] Vercel account (sign up at https://vercel.com)
 - [ ] Railway account (sign up at https://railway.app) OR Render account
-- [ ] Supabase account (if using Supabase for database)
+- [ ] Docker installed locally (for local development)
 - [ ] Your code pushed to a GitHub repository
 
 ---
 
 ## Part 1: Database Setup
 
-### Option A: Using Supabase (Recommended)
+### Local Development (Docker)
 
-1. **Create a Supabase Project**
-   - Go to https://supabase.com/dashboard
-   - Click "New Project"
-   - Enter project name: `nails-booking-db`
-   - Set a strong database password (save it!)
-   - Choose a region close to your users
-   - Wait for project to be provisioned (~2 minutes)
+The project uses Docker Compose for local PostgreSQL:
 
-2. **Get Database Connection String**
-   - In Supabase dashboard, go to **Settings** → **Database**
-   - Scroll to **Connection string** → Select **URI**
-   - Copy the connection string (format: `postgresql://postgres:[YOUR-PASSWORD]@[HOST]:5432/postgres`)
-   - Replace `[YOUR-PASSWORD]` with your actual database password
-   - Save this as your `DATABASE_URL`
+1. **Start PostgreSQL with Docker**
+   ```bash
+   # In project root
+   docker-compose up -d
+   ```
+
+2. **Verify Database is Running**
+   ```bash
+   docker ps
+   # Should show postgres container running on port 5432
+   ```
 
 3. **Run Migrations**
    ```bash
-   # In your project root
    cd server
-
-   # Set the DATABASE_URL temporarily
-   export DATABASE_URL="postgresql://postgres:your-password@db.xxx.supabase.co:5432/postgres"
-
-   # Generate Prisma client
    npx prisma generate
-
-   # Run migrations
    npx prisma migrate deploy
 
-   # Seed initial data (optional)
+   # Optional: Seed initial data
    npx prisma db seed
    ```
 
-### Option B: Using Railway PostgreSQL
+4. **Local DATABASE_URL**
+   ```bash
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nailsapp"
+   ```
 
-1. **Will be set up automatically when deploying backend** (see Part 2)
+### Production (Railway PostgreSQL)
+
+Railway will automatically provision PostgreSQL when deploying the backend (see Part 2).
 
 ---
 
@@ -124,7 +120,7 @@ Before starting, ensure you have:
    - **Start Command**: `npm run migrate:deploy && npm start`
    - **Build Command**: `npm run build`
 
-5. **Add PostgreSQL Database** (if not using Supabase)
+5. **Add PostgreSQL Database**
    - Click **"+ New"** → **"Database"** → **"Add PostgreSQL"**
    - Railway will automatically create a `DATABASE_URL` environment variable
 
@@ -133,7 +129,7 @@ Before starting, ensure you have:
    Go to **Variables** tab and add:
 
    ```bash
-   # Database (if using Supabase, use your Supabase connection string)
+   # Database (Railway auto-generates DATABASE_URL)
    DATABASE_URL=postgresql://postgres:password@host:5432/postgres
 
    # JWT Secret (generate a secure random string)
@@ -286,24 +282,47 @@ Before starting, ensure you have:
 
 ### 1. Create Admin User
 
-The backend has a setup edge function. You can create an admin user by:
+Create an admin user directly in the database:
 
-**Option A: Using Supabase Dashboard**
-1. Go to Supabase Dashboard → Authentication → Users
-2. Click "Add User"
-3. Enter email and password
-4. Go to Table Editor → profiles
-5. Find the user and set `role = 'admin'`
+**Using Railway PostgreSQL Console:**
 
-**Option B: Using SQL**
+1. Go to Railway Dashboard → PostgreSQL service
+2. Click **"Data"** tab (or connect via CLI)
+3. Run the following SQL:
+
 ```sql
--- In Supabase SQL Editor or Railway PostgreSQL console
-INSERT INTO profiles (id, email, role)
+-- First, create a user record (simulating registration)
+INSERT INTO "User" (id, email, password, "createdAt", "updatedAt")
 VALUES (
-  'user-id-from-auth-users-table',
-  'admin@example.com',
-  'admin'
+  gen_random_uuid(),
+  'admin@yoursalon.com',
+  -- You'll need to hash the password using bcrypt
+  -- For now, use a temporary password and change it after first login
+  '$2b$10$...',  -- Replace with bcrypt hash
+  NOW(),
+  NOW()
 );
+
+-- Then create the profile with admin role
+INSERT INTO "Profile" (id, email, role, "createdAt")
+VALUES (
+  (SELECT id FROM "User" WHERE email = 'admin@yoursalon.com'),
+  'admin@yoursalon.com',
+  'admin',
+  NOW()
+);
+```
+
+**Alternative: Create via Registration + SQL Update:**
+
+1. Register a new user via the frontend login page
+2. Go to Railway PostgreSQL console
+3. Update the user's role:
+
+```sql
+UPDATE "Profile"
+SET role = 'admin'
+WHERE email = 'your-registered-email@example.com';
 ```
 
 ### 2. Add Treatments
@@ -342,7 +361,7 @@ VALUES (
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `DATABASE_URL` | PostgreSQL connection string (auto-generated by Railway) | `postgresql://user:pass@host:5432/db` |
 | `JWT_SECRET` | Secret for JWT tokens (min 32 chars) | `a1b2c3d4e5f6...` |
 | `CORS_ORIGIN` | Allowed frontend origins | `https://app.vercel.app` |
 | `NODE_ENV` | Environment mode | `production` |
@@ -391,6 +410,12 @@ Both Vercel and Railway support automatic deployments:
 2. Click **"Deployments"**
 3. Click on a deployment → **"View Function Logs"**
 4. Or use **"Runtime Logs"** for real-time monitoring
+
+### Database Monitoring
+
+**Railway PostgreSQL:**
+- Go to PostgreSQL service → **"Metrics"** tab
+- Monitor connections, queries, and storage
 
 ### Uptime Monitoring (Optional)
 
@@ -452,8 +477,9 @@ Set up monitoring for:
   ```
   postgresql://USER:PASSWORD@HOST:PORT/DATABASE
   ```
-- Check database is running (Supabase dashboard or Railway)
+- Check database is running in Railway dashboard
 - Ensure no firewall blocking connections
+- For Railway, the DATABASE_URL is auto-generated when you add PostgreSQL
 
 #### 5. **Frontend shows blank page**
 
@@ -473,6 +499,22 @@ Set up monitoring for:
 - Update environment variable
 - Manually trigger redeploy
 - Clear build cache (Vercel: **Settings** → **General** → **Clear Cache**)
+
+#### 7. **Docker PostgreSQL won't start locally**
+
+**Cause**: Port 5432 already in use or container conflict
+
+**Fix**:
+```bash
+# Check if port is in use
+lsof -i :5432
+
+# Stop and remove existing containers
+docker-compose down -v
+
+# Restart
+docker-compose up -d
+```
 
 ---
 
@@ -534,10 +576,19 @@ If auto-migration fails:
 **Best practice**: Before risky migrations, create a backup:
 
 ```bash
-# If using Supabase, use their backup feature
-# Or manually backup with pg_dump
+# Backup Railway PostgreSQL
+# 1. Get DATABASE_URL from Railway
+# 2. Run pg_dump
 pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
+
+# Restore from backup
+psql $DATABASE_URL < backup-20260217.sql
 ```
+
+**Railway Backups:**
+- Railway doesn't provide automatic backups on free tier
+- Consider upgrading to a paid plan for automated backups
+- Or set up manual backup cron jobs
 
 ---
 
@@ -564,17 +615,26 @@ pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
    - Review indexes on `appointments.start_datetime` and `appointments.status`
 
 2. **Connection Pooling**
-   - Supabase has built-in connection pooling
-   - For Railway, consider using Prisma's connection pool:
+   - Railway PostgreSQL has built-in connection pooling
+   - Configure Prisma connection limit in `schema.prisma`:
      ```prisma
      datasource db {
        provider = "postgresql"
        url      = env("DATABASE_URL")
-       connectionLimit = 5
+     }
+
+     generator client {
+       provider = "prisma-client-js"
+       previewFeatures = ["fullTextSearch"]
      }
      ```
 
-3. **Caching Strategy**
+3. **Query Optimization**
+   - Use Prisma's `select` to fetch only needed fields
+   - Add indexes for frequently queried fields
+   - Monitor slow queries in Railway metrics
+
+4. **Caching Strategy**
    - Cache availability rules (they rarely change)
    - Consider Redis for session management (future enhancement)
 
@@ -591,6 +651,7 @@ pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
 - [ ] SQL injection protection (Prisma handles this)
 - [ ] XSS protection (React handles this)
 - [ ] User input validation on both frontend and backend
+- [ ] PostgreSQL in production has strong password (Railway auto-generates)
 
 ---
 
@@ -606,13 +667,68 @@ pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
 **Railway** (Free Trial):
 - $5 credit/month (limited time)
 - After trial: ~$5-10/month for small apps
-
-**Supabase** (Free Tier):
-- 500 MB database
-- 2 GB transfer
-- 50,000 monthly active users
+- PostgreSQL included in service cost
 
 **Estimated Monthly Cost**: $5-15 for a small production app
+
+### Cost Optimization Tips
+
+1. **Railway**: Monitor resource usage in dashboard
+2. **Vercel**: Optimize images and bundle size
+3. **Database**: Clean up old data periodically
+4. **Monitoring**: Use free tiers of monitoring services
+
+---
+
+## Part 14: Local Development with Docker
+
+### Docker Compose Configuration
+
+The `docker-compose.yml` in project root:
+
+```yaml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nailsapp-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nailsapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+### Useful Docker Commands
+
+```bash
+# Start database
+docker-compose up -d
+
+# Stop database
+docker-compose down
+
+# Stop and remove volumes (fresh start)
+docker-compose down -v
+
+# View logs
+docker-compose logs -f postgres
+
+# Access PostgreSQL shell
+docker exec -it nailsapp-postgres psql -U postgres -d nailsapp
+
+# Backup local database
+docker exec nailsapp-postgres pg_dump -U postgres nailsapp > backup.sql
+
+# Restore local database
+docker exec -i nailsapp-postgres psql -U postgres nailsapp < backup.sql
+```
 
 ---
 
@@ -625,7 +741,7 @@ pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
 - **Deployment Issues**: Check provider documentation
   - Vercel: https://vercel.com/docs
   - Railway: https://docs.railway.app
-  - Supabase: https://supabase.com/docs
+  - PostgreSQL: https://www.postgresql.org/docs/
 
 ### Staying Updated
 
@@ -661,6 +777,12 @@ cd server && npx tsc --noEmit
 
 # Test production build locally
 pnpm run build && pnpm run preview
+
+# Start local PostgreSQL
+docker-compose up -d
+
+# View database in Prisma Studio
+cd server && npx prisma studio
 ```
 
 ---
