@@ -31,7 +31,6 @@ export class ReminderService {
     const authToken = process.env.TWILIO_AUTH_TOKEN;
 
     if (!accountSid || !authToken) {
-      console.warn('[Reminder] Twilio credentials not configured');
       return null;
     }
 
@@ -49,11 +48,8 @@ export class ReminderService {
     failed: number;
     skipped: number;
   }> {
-    console.log('[Reminder] Starting reminder check...');
-
     const client = this.getTwilioClient();
     if (!client) {
-      console.log('[Reminder] Twilio not configured - skipping reminders');
       return { total: 0, sent: 0, failed: 0, skipped: 0 };
     }
 
@@ -61,11 +57,6 @@ export class ReminderService {
     const now = new Date();
     const startWindow = new Date(now.getTime() + 55 * 60 * 1000);
     const endWindow = new Date(now.getTime() + 65 * 60 * 1000);
-
-    console.log('[Reminder] Checking appointments between:', {
-      start: startWindow.toISOString(),
-      end: endWindow.toISOString(),
-    });
 
     // Query appointments that need reminders
     const appointments = await prisma.appointment.findMany({
@@ -84,8 +75,6 @@ export class ReminderService {
         treatment: true,
       },
     });
-
-    console.log(`[Reminder] Found ${appointments.length} appointments to remind`);
 
     if (appointments.length === 0) {
       return { total: 0, sent: 0, failed: 0, skipped: 0 };
@@ -112,12 +101,11 @@ export class ReminderService {
           results.failed++;
         }
       } catch (error) {
-        console.error('[Reminder] Error processing appointment:', appointment.id, error);
+        console.error('[Reminder] Error processing appointment:', error);
         results.failed++;
       }
     }
 
-    console.log('[Reminder] Results:', results);
     return results;
   }
 
@@ -131,7 +119,6 @@ export class ReminderService {
     const whatsappFrom = process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!whatsappFrom) {
-      console.error('[Reminder] TWILIO_WHATSAPP_NUMBER not configured');
       return false;
     }
 
@@ -144,16 +131,12 @@ export class ReminderService {
         ? `whatsapp:${appointment.phone}`
         : `whatsapp:+${appointment.phone}`;
 
-      console.log(`[Reminder] Sending WhatsApp to ${appointment.phone} (${appointment.customerName})`);
-
       // Send via Twilio WhatsApp API
       await client.messages.create({
         from: whatsappFrom,
         to: toNumber,
         body: message,
       });
-
-      console.log(`[Reminder] Successfully sent WhatsApp to ${appointment.phone}`);
 
       // Record successful reminder
       await prisma.appointmentReminder.create({
@@ -165,9 +148,7 @@ export class ReminderService {
       });
 
       return true;
-    } catch (error) {
-      console.error('[Reminder] Failed to send WhatsApp:', error);
-
+    } catch (error: any) {
       // Record failed reminder
       await prisma.appointmentReminder.create({
         data: {
@@ -253,15 +234,21 @@ Looking forward to seeing you! ✨
    * Send immediate booking confirmation via WhatsApp
    */
   static async sendBookingConfirmation(appointment: AppointmentWithTreatment): Promise<boolean> {
+    console.log('[Reminder] 📱 sendBookingConfirmation called', {
+      appointmentId: appointment.id,
+      customerName: appointment.customerName,
+      phone: appointment.phone,
+    });
+
     const client = this.getTwilioClient();
     if (!client) {
-      console.warn('[Reminder] Twilio not configured - skipping booking confirmation');
+      console.warn('[Reminder] ⚠️  Twilio not configured - skipping booking confirmation');
       return false;
     }
 
     const whatsappFrom = process.env.TWILIO_WHATSAPP_NUMBER;
     if (!whatsappFrom) {
-      console.error('[Reminder] TWILIO_WHATSAPP_NUMBER not configured');
+      console.error('[Reminder] ❌ TWILIO_WHATSAPP_NUMBER not configured in .env');
       return false;
     }
 
@@ -273,16 +260,36 @@ Looking forward to seeing you! ✨
         ? `whatsapp:${appointment.phone}`
         : `whatsapp:+${appointment.phone}`;
 
+      console.log('[Reminder] 📤 Sending booking confirmation...', {
+        from: whatsappFrom,
+        to: toNumber,
+        phoneOriginal: appointment.phone,
+        messageLength: message.length,
+      });
+
       // Send via Twilio WhatsApp API
-      await client.messages.create({
+      const result = await client.messages.create({
         from: whatsappFrom,
         to: toNumber,
         body: message,
       });
 
+      console.log('[Reminder] ✅ Booking confirmation sent successfully!', {
+        messageSid: result.sid,
+        status: result.status,
+        to: toNumber,
+      });
+
       return true;
-    } catch (error) {
-      console.error('[Reminder] Failed to send booking confirmation:', error);
+    } catch (error: any) {
+      console.error('[Reminder] ❌ Failed to send booking confirmation:', {
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorStatus: error.status,
+        moreInfo: error.moreInfo,
+        phone: appointment.phone,
+        appointmentId: appointment.id,
+      });
       return false;
     }
   }

@@ -173,7 +173,7 @@ export class AppointmentsService {
 
     // Send booking confirmation via WhatsApp (async, don't wait for it)
     ReminderService.sendBookingConfirmation(appointment as any).catch((error) => {
-      console.error('[Appointments] Failed to send booking confirmation:', error);
+      console.error('[Appointments] Failed to send booking confirmation:', error.message);
     });
 
     return AppointmentsService.transformAppointment(appointment);
