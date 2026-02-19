@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { ReminderService } from './reminder.service';
 
 const prisma = new PrismaClient();
 
@@ -169,6 +170,11 @@ export class AppointmentsService {
         timeout: 10000, // 10 seconds timeout
       }
     );
+
+    // Send booking confirmation via WhatsApp (async, don't wait for it)
+    ReminderService.sendBookingConfirmation(appointment as any).catch((error) => {
+      console.error('[Appointments] Failed to send booking confirmation:', error);
+    });
 
     return AppointmentsService.transformAppointment(appointment);
   }

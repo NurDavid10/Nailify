@@ -250,6 +250,111 @@ Looking forward to seeing you! ✨
   }
 
   /**
+   * Send immediate booking confirmation via WhatsApp
+   */
+  static async sendBookingConfirmation(appointment: AppointmentWithTreatment): Promise<boolean> {
+    const client = this.getTwilioClient();
+    if (!client) {
+      console.warn('[Reminder] Twilio not configured - skipping booking confirmation');
+      return false;
+    }
+
+    const whatsappFrom = process.env.TWILIO_WHATSAPP_NUMBER;
+    if (!whatsappFrom) {
+      console.error('[Reminder] TWILIO_WHATSAPP_NUMBER not configured');
+      return false;
+    }
+
+    try {
+      const message = this.formatBookingConfirmationMessage(appointment);
+
+      // Ensure phone number has + prefix
+      const toNumber = appointment.phone.startsWith('+')
+        ? `whatsapp:${appointment.phone}`
+        : `whatsapp:+${appointment.phone}`;
+
+      // Send via Twilio WhatsApp API
+      await client.messages.create({
+        from: whatsappFrom,
+        to: toNumber,
+        body: message,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('[Reminder] Failed to send booking confirmation:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Format WhatsApp booking confirmation message
+   */
+  private static formatBookingConfirmationMessage(appointment: AppointmentWithTreatment): string {
+    const appointmentTime = new Date(appointment.startDatetime);
+
+    // Format date and time in Israel timezone
+    const dateStr = appointmentTime.toLocaleDateString('en-US', {
+      timeZone: 'Asia/Jerusalem',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const timeStr = appointmentTime.toLocaleTimeString('en-US', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    // Multilingual confirmation message (Arabic, Hebrew, English)
+    const message = `
+🌸 *تأكيد الحجز / Booking Confirmation / אישור הזמנה* 🌸
+
+*العربية:*
+مرحباً ${appointment.customerName} 👋
+تم تأكيد موعدك بنجاح!
+
+📅 التاريخ: ${dateStr}
+🕐 الوقت: ${timeStr}
+💅 الخدمة: ${appointment.treatment.nameAr}
+💰 السعر: ₪${appointment.priceAtBooking}
+
+سنرسل لك تذكيراً قبل الموعد بساعة. نراكم قريباً! ✨
+
+━━━━━━━━━━━━━━━━
+
+*עברית:*
+שלום ${appointment.customerName} 👋
+הפגישה שלך אושרה בהצלחה!
+
+📅 תאריך: ${dateStr}
+🕐 שעה: ${timeStr}
+💅 טיפול: ${appointment.treatment.nameHe}
+💰 מחיר: ₪${appointment.priceAtBooking}
+
+נשלח לך תזכורת שעה לפני הפגישה. נתראה בקרוב! ✨
+
+━━━━━━━━━━━━━━━━
+
+*English:*
+Hi ${appointment.customerName} 👋
+Your appointment has been confirmed!
+
+📅 Date: ${dateStr}
+🕐 Time: ${timeStr}
+💅 Treatment: ${appointment.treatment.nameEn}
+💰 Price: ₪${appointment.priceAtBooking}
+
+We'll send you a reminder 1 hour before your appointment. See you soon! ✨
+    `.trim();
+
+    return message;
+  }
+
+  /**
    * Get reminder statistics for admin dashboard
    */
   static async getReminderStats(): Promise<{

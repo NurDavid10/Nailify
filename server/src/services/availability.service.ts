@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 const prisma = new PrismaClient();
+
+// Israel timezone constant
+const ISRAEL_TIMEZONE = 'Asia/Jerusalem';
 
 export interface TimeSlot {
   start: string; // ISO string
@@ -93,9 +97,6 @@ export class AvailabilityService {
     // Parse the date string (YYYY-MM-DD)
     const date = new Date(dateStr + 'T00:00:00.000Z');
 
-    console.log('[getAvailableTimeSlots] Received dateStr:', dateStr);
-    console.log('[getAvailableTimeSlots] Parsed as UTC date:', date.toISOString());
-
     // Get all availability rules for this specific date (supports multiple shifts)
     const allRules = await prisma.availabilityRule.findMany({
       where: {
@@ -104,18 +105,7 @@ export class AvailabilityService {
       orderBy: { startTime: 'asc' },
     });
 
-    console.log('[getAvailableTimeSlots] Found availability rules:', allRules.length);
-    allRules.forEach((rule, idx) => {
-      console.log(`  Rule ${idx + 1}:`, {
-        specificDate: rule.specificDate.toISOString(),
-        startTime: rule.startTime.toISOString(),
-        endTime: rule.endTime.toISOString(),
-        interval: rule.slotIntervalMinutes,
-      });
-    });
-
     if (!allRules || allRules.length === 0) {
-      console.log('[getAvailableTimeSlots] No rules found, returning empty array');
       return [];
     }
 
@@ -124,12 +114,6 @@ export class AvailabilityService {
     startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setUTCHours(23, 59, 59, 999);
-
-    console.log('[getAvailableTimeSlots] Querying appointments for date range:', {
-      dateStr,
-      startOfDay: startOfDay.toISOString(),
-      endOfDay: endOfDay.toISOString(),
-    });
 
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -145,36 +129,29 @@ export class AvailabilityService {
       },
     });
 
-    console.log('[getAvailableTimeSlots] Found appointments:', appointments.map(apt => ({
-      start: apt.startDatetime.toISOString(),
-      end: apt.endDatetime.toISOString(),
-    })));
-
     // Generate time slots from all rules
     const slots: TimeSlot[] = [];
-    const now = new Date();
-    console.log('[getAvailableTimeSlots] Current time (now):', now.toISOString());
+    // Get current time in Israel timezone for accurate "past slot" filtering
+    const nowUtc = new Date();
 
     for (const rules of allRules) {
       const startTime = AvailabilityService.formatTime(rules.startTime);
       const endTime = AvailabilityService.formatTime(rules.endTime);
 
-      console.log('[getAvailableTimeSlots] Processing rule with times:', { startTime, endTime });
-
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const [endHour, endMinute] = endTime.split(':').map(Number);
 
-      // Create date in local timezone (Israel) - NOT UTC
-      // This ensures admin's input time (e.g., 16:00) is treated as local time
+      // Create date in Israel timezone and convert to UTC
+      // This ensures admin's input time (e.g., 16:00) is treated as Israel time
       const [year, month, day] = dateStr.split('-').map(Number);
-      let currentTime = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
 
-      const endTimeDate = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
+      // Create a date object representing this time in Israel timezone
+      const israelStartDate = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
+      const israelEndDate = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
 
-      console.log('[getAvailableTimeSlots] Generating slots from', currentTime.toISOString(), 'to', endTimeDate.toISOString());
-
-      let slotsGenerated = 0;
-      let slotsSkippedPast = 0;
+      // Convert to UTC for consistent storage/comparison
+      let currentTime = fromZonedTime(israelStartDate, ISRAEL_TIMEZONE);
+      const endTimeDate = fromZonedTime(israelEndDate, ISRAEL_TIMEZONE);
 
       while (currentTime < endTimeDate) {
         const slotStart = new Date(currentTime);
@@ -183,13 +160,11 @@ export class AvailabilityService {
         );
 
         // Skip slots that have already passed (for today)
-        if (slotStart <= now) {
-          slotsSkippedPast++;
+        // Compare in UTC since both slotStart and nowUtc are in UTC
+        if (slotStart <= nowUtc) {
           currentTime = slotEnd;
           continue;
         }
-
-        slotsGenerated++;
 
         // Check if slot is available (not overlapping with existing appointments)
         const isAvailable = !appointments.some((apt) => {
@@ -199,21 +174,7 @@ export class AvailabilityService {
           const condition1 = slotStart >= aptStart && slotStart < aptEnd;
           const condition2 = slotEnd > aptStart && slotEnd <= aptEnd;
           const condition3 = slotStart <= aptStart && slotEnd >= aptEnd;
-          const overlaps = condition1 || condition2 || condition3;
-
-          if (overlaps) {
-            console.log('[getAvailableTimeSlots] ⚠️  Slot BLOCKED by appointment:', {
-              slot: `${slotStart.toISOString()} - ${slotEnd.toISOString()}`,
-              appointment: `${aptStart.toISOString()} - ${aptEnd.toISOString()}`,
-              slotDuration: `${(slotEnd.getTime() - slotStart.getTime()) / 60000} min`,
-              appointmentDuration: `${(aptEnd.getTime() - aptStart.getTime()) / 60000} min`,
-              condition1_slotStartsDuringApt: condition1,
-              condition2_slotEndsDuringApt: condition2,
-              condition3_slotContainsApt: condition3,
-            });
-          }
-
-          return overlaps;
+          return condition1 || condition2 || condition3;
         });
 
         slots.push({
@@ -224,34 +185,31 @@ export class AvailabilityService {
 
         currentTime = slotEnd;
       }
-
-      console.log('[getAvailableTimeSlots] Rule generated:', slotsGenerated, 'slots, skipped', slotsSkippedPast, 'past slots');
     }
-
-    console.log('[getAvailableTimeSlots] Total slots generated:', slots.length);
-    console.log('[getAvailableTimeSlots] Available slots:', slots.filter(s => s.available).length);
 
     return slots;
   }
 
   /**
-   * Helper to format time from Date to HH:MM (in local timezone)
+   * Helper to format time from Date to HH:MM (in Israel timezone)
    */
   private static formatTime(date: Date): string {
-    // Use local time, not UTC
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
+    // Convert UTC date to Israel timezone for display
+    const israelDate = toZonedTime(date, ISRAEL_TIMEZONE);
+    const hours = israelDate.getHours().toString().padStart(2, '0');
+    const minutes = israelDate.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   }
 
   /**
-   * Helper to parse HH:MM string to Date (today at that time in local timezone)
+   * Helper to parse HH:MM string to Date (today at that time in Israel timezone, stored as UTC)
    */
   private static parseTime(timeStr: string): Date {
     const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = new Date();
-    // Use local time, not UTC
-    date.setHours(hours, minutes, 0, 0);
-    return date;
+    const now = new Date();
+    const israelDate = toZonedTime(now, ISRAEL_TIMEZONE);
+    israelDate.setHours(hours, minutes, 0, 0);
+    // Convert back to UTC for storage
+    return fromZonedTime(israelDate, ISRAEL_TIMEZONE);
   }
 }
